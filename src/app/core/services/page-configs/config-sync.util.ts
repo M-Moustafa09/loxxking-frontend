@@ -21,6 +21,26 @@ interface SyncMessage {
   __sourceInstanceId: string;
 }
 
+/**
+ * Headers for authenticated page-configuration writes.
+ * These raw fetch() calls bypass Angular's HttpClient, so the auth-token
+ * interceptor never runs — attach the admin JWT here. The write endpoints
+ * require Admin/StoreManager; a viewer without a token is (correctly) rejected.
+ */
+function pageConfigWriteHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token =
+      typeof window !== 'undefined' ? window.localStorage.getItem('lk-auth-token') : null;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {
+    // localStorage may be unavailable (SSR / privacy mode); send without auth.
+  }
+  return headers;
+}
+
 /** Observable signal of the database save status for UI display */
 export type DbSyncStatus = 'idle' | 'saving' | 'saved' | 'error';
 export const dbSyncStatus = signal<DbSyncStatus>('idle');
@@ -124,9 +144,7 @@ function queueDatabaseSave(key: string, json: string): void {
     try {
       const response = await fetch(`/api/page-configurations/${encodeURIComponent(key)}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: pageConfigWriteHeaders(),
         body: JSON.stringify({ configJson: json })
       });
 
@@ -201,7 +219,7 @@ export async function syncConfigsWithDatabase(): Promise<void> {
     if (Object.keys(localConfigsToUpload).length > 0) {
       fetch('/api/page-configurations/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: pageConfigWriteHeaders(),
         body: JSON.stringify({ configs: localConfigsToUpload })
       }).catch(() => {});
     }
@@ -233,7 +251,7 @@ export async function forceSaveAllConfigsToDatabase(): Promise<boolean> {
   try {
     const res = await fetch('/api/page-configurations/batch', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: pageConfigWriteHeaders(),
       body: JSON.stringify({ configs: allConfigs })
     });
 
