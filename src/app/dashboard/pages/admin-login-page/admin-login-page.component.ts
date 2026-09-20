@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -22,7 +22,7 @@ import { AuthService } from '../../../core/services/auth/auth.service';
   templateUrl: './admin-login-page.component.html',
   styleUrl: './admin-login-page.component.css'
 })
-export class AdminLoginPageComponent {
+export class AdminLoginPageComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -41,6 +41,15 @@ export class AdminLoginPageComponent {
   error = '';
   loading = false;
   showPassword = false;
+
+  ngOnInit(): void {
+    // Already signed in — an admin who came in through the CRM's SSO hand-off, or one who simply
+    // opened this page with a live session. Asking for the password again would be pointless.
+    if (this.authService.isAdmin()) {
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/store-customizer';
+      this.router.navigateByUrl(returnUrl, { replaceUrl: true });
+    }
+  }
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;

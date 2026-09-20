@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve --port 5050",
     "build": "ng build",
+    "prebuild:backend": "node scripts/clean-wwwroot.mjs",
     "build:backend": "ng build --configuration backend",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"

@@ -19,7 +19,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Do not show errors for background silent checks
-      if (req.url.includes('/users/me') || req.url.includes('/home-page-config')) {
+      if (req.url.includes('/users/me') || req.url.includes('/home-page-config') || req.url.includes('/sso/session-token')) {
         return throwError(() => error);
       }
 
