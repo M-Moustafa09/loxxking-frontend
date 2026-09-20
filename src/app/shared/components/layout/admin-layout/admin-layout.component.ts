@@ -16,6 +16,7 @@ import {
   Menu,
   Package,
   Search,
+  Settings,
   Store,
   Tag,
   Trash2,
@@ -353,6 +354,7 @@ export class AdminLayoutComponent implements OnInit {
   readonly MenuIcon = Menu;
   readonly PackageIcon = Package;
   readonly SearchIcon = Search;
+  readonly SettingsIcon = Settings;
   readonly StoreIcon = Store;
   readonly TagIcon = Tag;
   readonly Trash2Icon = Trash2;

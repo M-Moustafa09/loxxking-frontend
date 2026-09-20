@@ -141,8 +141,10 @@
     padding: 16px 10px 28px;
   }
 
+  /* The two text chips were hidden here because they did not fit. The single gear does, and the
+     products screen is the one thing an admin comes to this header for — so it stays. */
   .dashboard-layout-page .dashboard-home__header-actions {
-    display: none;
+    display: flex;
   }
 }
 

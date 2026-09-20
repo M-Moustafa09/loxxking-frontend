@@ -1,0 +1,225 @@
+<app-admin-layout>
+  <div class="flex flex-col h-full bg-gray-50/50" dir="rtl">
+    <!-- Toolbar — same shape as the store-customizer one, so the two pages read as one dashboard -->
+    <div class="flex flex-wrap items-center justify-between gap-4 p-4 flex-row-reverse bg-white border-b border-gray-200">
+      <div class="flex flex-col">
+        <h1 class="text-xl font-black text-gray-900 tracking-tight">{{ 'ADMIN_PRODUCTS.TITLE' | translate }}</h1>
+        <span class="text-sm text-gray-500 hidden md:inline">{{ 'ADMIN_PRODUCTS.SUBTITLE' | translate }}</span>
+      </div>
+
+      <div class="flex flex-row-reverse items-center gap-3">
+        <label class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+          <lucide-icon [img]="SearchIcon" [size]="16" class="text-gray-400"></lucide-icon>
+          <input
+            type="search"
+            [value]="search()"
+            (input)="updateSearch($event)"
+            [placeholder]="'ADMIN_PRODUCTS.SEARCH_PLACEHOLDER' | translate"
+            class="bg-transparent text-sm text-gray-700 outline-none w-44"
+          />
+        </label>
+
+        <button
+          type="button"
+          (click)="openCreate()"
+          class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200 cursor-pointer">
+          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
+          <span>{{ 'ADMIN_PRODUCTS.ADD' | translate }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="p-4 lg:p-6 overflow-y-auto">
+      <div class="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <p *ngIf="isLoading()" class="p-8 text-center text-sm text-gray-500">
+          {{ 'ADMIN_PRODUCTS.LOADING' | translate }}
+        </p>
+
+        <p *ngIf="!isLoading() && visibleProducts().length === 0" class="p-8 text-center text-sm text-gray-500">
+          {{ 'ADMIN_PRODUCTS.EMPTY' | translate }}
+        </p>
+
+        <table *ngIf="!isLoading() && visibleProducts().length > 0" class="lk-products-table">
+          <thead>
+            <tr>
+              <th class="w-16">{{ 'ADMIN_PRODUCTS.COL_IMAGE' | translate }}</th>
+              <th>{{ 'ADMIN_PRODUCTS.COL_NAME_AR' | translate }}</th>
+              <th>{{ 'ADMIN_PRODUCTS.COL_NAME_EN' | translate }}</th>
+              <th>{{ 'ADMIN_PRODUCTS.COL_CATEGORY' | translate }}</th>
+              <th>{{ 'ADMIN_PRODUCTS.COL_PRICE' | translate }}</th>
+              <th>{{ 'ADMIN_PRODUCTS.COL_CODE' | translate }}</th>
+              <th class="w-24">{{ 'ADMIN_PRODUCTS.COL_ACTIONS' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of visibleProducts()">
+              <td>
+                <img *ngIf="product.images.length > 0" [src]="product.images[0]" [alt]="product.nameAr" class="lk-products-thumb" />
+                <span *ngIf="product.images.length === 0" class="lk-products-thumb lk-products-thumb--empty">
+                  <lucide-icon [img]="ImageOffIcon" [size]="15"></lucide-icon>
+                </span>
+              </td>
+              <td class="font-semibold text-gray-900">{{ product.nameAr }}</td>
+              <td class="text-gray-600" dir="ltr">{{ product.nameEn }}</td>
+              <td class="text-gray-600">{{ categoryLabel(product) }}</td>
+              <td class="text-gray-900 font-semibold">{{ product.price }}</td>
+              <td>
+                <span *ngIf="product.productCode" class="lk-products-code" dir="ltr">{{ product.productCode }}</span>
+                <span *ngIf="!product.productCode" class="lk-products-code lk-products-code--missing">
+                  {{ 'ADMIN_PRODUCTS.NO_CODE' | translate }}
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class="lk-products-action"
+                    (click)="openEdit(product)"
+                    [attr.title]="'ADMIN_PRODUCTS.EDIT' | translate"
+                    [attr.aria-label]="'ADMIN_PRODUCTS.EDIT' | translate">
+                    <lucide-icon [img]="PencilIcon" [size]="15"></lucide-icon>
+                  </button>
+                  <button
+                    type="button"
+                    class="lk-products-action lk-products-action--danger"
+                    (click)="askDelete(product)"
+                    [attr.title]="'ADMIN_PRODUCTS.DELETE' | translate"
+                    [attr.aria-label]="'ADMIN_PRODUCTS.DELETE' | translate">
+                    <lucide-icon [img]="Trash2Icon" [size]="15"></lucide-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / edit form -->
+  <div class="lk-products-modal-layer" *ngIf="isFormOpen()" dir="rtl">
+    <button type="button" class="lk-products-modal-backdrop" (click)="closeForm()" [attr.aria-label]="'COMMON.CLOSE' | translate"></button>
+
+    <section class="lk-products-modal" role="dialog" aria-modal="true">
+      <header class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+        <h2 class="text-lg font-black text-gray-900">
+          {{ (editing() ? 'ADMIN_PRODUCTS.EDIT_TITLE' : 'ADMIN_PRODUCTS.ADD_TITLE') | translate }}
+        </h2>
+        <button type="button" (click)="closeForm()" class="text-gray-400 hover:text-gray-700" [attr.aria-label]="'COMMON.CLOSE' | translate">
+          <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
+        </button>
+      </header>
+
+      <div class="lk-products-modal-body">
+        <label class="lk-products-field">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_CATEGORY' | translate }}</span>
+          <select [(ngModel)]="form.categoryId" name="categoryId" [disabled]="!!editing()">
+            <option value="" disabled>{{ 'ADMIN_PRODUCTS.CHOOSE_CATEGORY' | translate }}</option>
+            <option *ngFor="let category of categories()" [value]="category.id">
+              {{ category.nameAr || category.nameEn }}
+            </option>
+          </select>
+          <small *ngIf="editing()" class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CATEGORY_LOCKED' | translate }}</small>
+        </label>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="lk-products-field">
+            <span>{{ 'ADMIN_PRODUCTS.FIELD_NAME_AR' | translate }}</span>
+            <input type="text" [(ngModel)]="form.nameAr" name="nameAr" />
+          </label>
+
+          <label class="lk-products-field">
+            <span>{{ 'ADMIN_PRODUCTS.FIELD_NAME_EN' | translate }}</span>
+            <input type="text" [(ngModel)]="form.nameEn" name="nameEn" dir="ltr" />
+          </label>
+        </div>
+
+        <label class="lk-products-field">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_DESCRIPTION' | translate }}</span>
+          <textarea rows="4" [(ngModel)]="form.description" name="description"></textarea>
+        </label>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label class="lk-products-field">
+            <span>{{ 'ADMIN_PRODUCTS.FIELD_PRICE' | translate }}</span>
+            <input type="number" min="0" step="0.01" [(ngModel)]="form.basePrice" name="basePrice" dir="ltr" />
+          </label>
+
+          <label class="lk-products-field">
+            <span>{{ 'ADMIN_PRODUCTS.FIELD_CODE' | translate }}</span>
+            <input type="text" [(ngModel)]="form.productCode" name="productCode" dir="ltr" placeholder="L39" />
+            <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CODE_HINT' | translate }}</small>
+          </label>
+        </div>
+
+        <div class="lk-products-field">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_IMAGES' | translate }}</span>
+          <div class="lk-products-images">
+            <div class="lk-products-image" *ngFor="let image of form.images; let i = index">
+              <img [src]="image" alt="" />
+              <button type="button" (click)="removeImage(i)" [attr.aria-label]="'ADMIN_PRODUCTS.REMOVE_IMAGE' | translate">
+                <lucide-icon [img]="XIcon" [size]="12"></lucide-icon>
+              </button>
+            </div>
+
+            <label class="lk-products-image-add">
+              <lucide-icon [img]="PlusIcon" [size]="18"></lucide-icon>
+              <input type="file" accept="image/png,image/jpeg,image/webp" multiple (change)="addImages($event)" />
+            </label>
+          </div>
+          <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.IMAGES_HINT' | translate }}</small>
+        </div>
+
+        <p class="lk-products-error" *ngIf="formError()">{{ formError() }}</p>
+      </div>
+
+      <footer class="flex items-center justify-start gap-3 border-t border-gray-200 px-5 py-4">
+        <button
+          type="button"
+          (click)="save()"
+          [disabled]="isSaving()"
+          class="px-5 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          {{ (isSaving() ? 'ADMIN_PRODUCTS.SAVING' : 'ADMIN_PRODUCTS.SAVE') | translate }}
+        </button>
+        <button
+          type="button"
+          (click)="closeForm()"
+          [disabled]="isSaving()"
+          class="px-5 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer">
+          {{ 'COMMON.CANCEL' | translate }}
+        </button>
+      </footer>
+    </section>
+  </div>
+
+  <!-- Delete confirmation -->
+  <div class="lk-products-modal-layer" *ngIf="deleting()" dir="rtl">
+    <button type="button" class="lk-products-modal-backdrop" (click)="deleting.set(null)" [attr.aria-label]="'COMMON.CLOSE' | translate"></button>
+
+    <section class="lk-products-modal lk-products-modal--sm" role="dialog" aria-modal="true">
+      <div class="px-5 py-6">
+        <h2 class="text-lg font-black text-gray-900 mb-2">{{ 'ADMIN_PRODUCTS.DELETE_TITLE' | translate }}</h2>
+        <p class="text-sm text-gray-600">
+          {{ 'ADMIN_PRODUCTS.DELETE_CONFIRM' | translate }} «{{ deleting()?.nameAr }}»
+        </p>
+      </div>
+      <footer class="flex items-center justify-start gap-3 border-t border-gray-200 px-5 py-4">
+        <button
+          type="button"
+          (click)="confirmDelete()"
+          [disabled]="isSaving()"
+          class="px-5 py-2 bg-rose-600 text-white rounded-md font-medium hover:bg-rose-700 transition-colors disabled:opacity-50 cursor-pointer">
+          {{ 'ADMIN_PRODUCTS.DELETE' | translate }}
+        </button>
+        <button
+          type="button"
+          (click)="deleting.set(null)"
+          [disabled]="isSaving()"
+          class="px-5 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer">
+          {{ 'COMMON.CANCEL' | translate }}
+        </button>
+      </footer>
+    </section>
+  </div>
+</app-admin-layout>

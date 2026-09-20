@@ -15,8 +15,17 @@
     </div>
 
     <div class="dashboard-home__header-actions" [attr.aria-label]="'DASHBOARD.AUTO_STR_48' | translate">
-      <button type="button" (click)="router.navigateByUrl('/admin/products')">{{ 'DASHBOARD.AUTO_STR_302' | translate }}</button>
-      <button type="button" (click)="router.navigateByUrl('/admin/products')">{{ 'DASHBOARD.AUTO_STR_260' | translate }}</button>
+      <!-- One gear in place of the old «عرض الأسعار» / «عرض المنتجات» pair: both led to the same
+           place, and until now that place was a redirect back to this very page. -->
+      <button
+        type="button"
+        class="dashboard-home__settings-button"
+        (click)="router.navigateByUrl('/admin/products')"
+        [attr.title]="'ADMIN_PRODUCTS.HEADER_BUTTON' | translate"
+        [attr.aria-label]="'ADMIN_PRODUCTS.HEADER_BUTTON' | translate"
+      >
+        <lucide-icon [img]="SettingsIcon" size="15" strokeWidth="2.2"></lucide-icon>
+      </button>
     </div>
   </header>
 
