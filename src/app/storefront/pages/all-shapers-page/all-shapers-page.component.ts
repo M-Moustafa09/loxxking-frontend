@@ -19,10 +19,9 @@ import {
   SortMode,
   ViewMode,
   FilterName,
-  ALL_SHAPERS_CATALOG_ITEMS,
+  ShaperCatalogItem,
 } from '../../../data/mock/all-shapers.mock';
-
-const catalogItems = ALL_SHAPERS_CATALOG_ITEMS;
+import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
 
 const productTypeOptions: Array<{ value: ProductType | 'all'; label: string }> = [
   { value: 'all', label: 'STOREFRONT.AUTO_STR_381' },
@@ -112,6 +111,19 @@ export class AllShapersPageComponent implements OnInit {
 
   newSortIcon = '/assets/icons/new-sort-icon.png';
 
+  private productRepo = inject(ProductRepositoryImpl);
+
+  /**
+   * The real catalogue. This page used to render `ALL_SHAPERS_CATALOG_ITEMS` — 24 items GENERATED
+   * from 8 templates repeated three times, each repeat nudged by +5 on the price and +7 on the
+   * review count. None of them were products: they linked to `prod-1`…`prod-8` and advertised
+   * ratings and stock the store never had. `/category/all` redirects here, so "see everything" was
+   * the most fictional page in the store.
+   */
+  catalogItems = signal<ShaperCatalogItem[]>([]);
+  /** The products the tiles were built from, so the cart gets the real thing and not a lookalike. */
+  private loadedProducts = signal<Product[]>([]);
+
   ngOnInit() {
     this.route.queryParamMap.subscribe(params => {
       const typeFromRoute = params.get('type');
@@ -120,13 +132,50 @@ export class AllShapersPageComponent implements OnInit {
         this.selectedType.set(routeType);
       }
     });
+
+    this.productRepo.getProducts().subscribe({
+      next: prods => {
+        this.loadedProducts.set(prods || []);
+        this.catalogItems.set((prods || []).map((p, i) => this.toCatalogItem(p, i)));
+      },
+      error: () => {
+        this.loadedProducts.set([]);
+        this.catalogItems.set([]);
+      }
+    });
+  }
+
+  /**
+   * `type` stays empty: the products API has no equivalent field, and inventing one would put this
+   * page back to guessing. An item with no type matches every type filter rather than disappearing
+   * from all of them — the filter buttons need a real field on the product to mean anything.
+   */
+  private toCatalogItem(p: any, index: number): ShaperCatalogItem {
+    return {
+      key: p.slug || p.id,
+      productId: p.id,
+      instanceId: p.id,
+      name: p.nameAr || p.nameEn || '',
+      image: (p.images && p.images[0]) || '',
+      price: Number(p.price) || 0,
+      originalPrice: p.originalPrice != null ? Number(p.originalPrice) : undefined,
+      rating: Number(p.rating) || 0,
+      reviews: Number(p.reviewCount) || 0,
+      color: (p.colors && p.colors[0]) || '',
+      type: '',
+      sizes: Array.isArray(p.sizes) ? p.sizes : [],
+      bestsellerRank: p.isBestSeller ? index : index + 1000,
+      latestRank: p.isNew ? index : index + 1000
+    };
   }
 
   filteredItems = computed(() => {
-    const result = catalogItems.filter(item => {
-      const typeMatches = this.selectedType() === 'all' || item.type === this.selectedType();
-      const colorMatches = this.selectedColor() === 'all' || item.color === this.selectedColor();
-      const sizeMatches = this.selectedSize() === 'all' || item.sizes.includes(this.selectedSize());
+    const result = this.catalogItems().filter(item => {
+      // An item with no type or colour is not filtered out by that facet — the product simply does
+      // not carry the field, and hiding it would be inventing an answer.
+      const typeMatches = this.selectedType() === 'all' || !item.type || item.type === this.selectedType();
+      const colorMatches = this.selectedColor() === 'all' || !item.color || item.color === this.selectedColor();
+      const sizeMatches = this.selectedSize() === 'all' || item.sizes.length === 0 || item.sizes.includes(this.selectedSize());
       return typeMatches && colorMatches && sizeMatches && matchesPrice(item.price, this.selectedPrice());
     });
     return [...result].sort((a, b) => this.sortMode() === 'bestseller' ? a.bestsellerRank - b.bestsellerRank : a.latestRank - b.latestRank);
@@ -149,17 +198,18 @@ export class AllShapersPageComponent implements OnInit {
   }
 
   addCatalogItemToCart(item: any) {
-    const baseProduct = products.find((p: any) => p.id === item.productId) ?? products[0];
-    const cartProduct: Product = {
-      ...baseProduct,
-      nameAr: item.name,
-      price: item.price,
-      originalPrice: item.originalPrice,
-      images: [item.image],
-      sizes: item.sizes,
-    };
-    const defaultSize = item.sizes[Math.floor(item.sizes.length / 2)] ?? 'M';
-    this.cartService.addToCart(cartProduct, defaultSize);
+    // The real product behind the tile. This used to read the mock array and fall back to
+    // `products[0]` when the id was unknown — which, now that the tiles carry real GUIDs, would
+    // have put a completely different product in the basket on every single click.
+    const product = this.loadedProducts().find(p => p.id === item.productId);
+    if (!product) {
+      this.toastService.showToast('STOREFRONT.AUTO_STR_77', 'error');
+      return;
+    }
+
+    const sizes: string[] = item.sizes?.length ? item.sizes : (product.sizes ?? []);
+    const defaultSize = sizes[Math.floor(sizes.length / 2)] ?? 'M';
+    this.cartService.addToCart(product, defaultSize);
     this.toastService.showToast('STOREFRONT.AUTO_STR_77');
   }
 

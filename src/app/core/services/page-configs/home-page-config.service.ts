@@ -61,12 +61,17 @@ const initialConfig: PageConfig = {
       titleAr: 'الأكثر مبيعاً',
       titleEn: 'Bestsellers',
       showTitle: true,
-      products: [
-        { id: 'prod-2', productId: 'prod-2', name: 'مشد كامل للجسم', nameAr: 'مشد كامل للجسم', nameEn: 'Full Body Shaper', price: 260, originalPrice: 320, image: '/assets/home/product-full-body-hd.png', rating: 4.9, reviewsCount: 112 },
-        { id: 'prod-3', productId: 'prod-3', name: 'مشد ما بعد الولادة', nameAr: 'مشد ما بعد الولادة', nameEn: 'Postpartum Shaper', price: 210, originalPrice: 250, image: '/assets/home/product-postpartum-beige-hd.png', rating: 4.8, reviewsCount: 96 },
-        { id: 'prod-4', productId: 'prod-4', name: 'مشد رياضي', nameAr: 'مشد رياضي', nameEn: 'Sports Shaper', price: 230, originalPrice: 270, image: '/assets/home/product-sport-black-hd.png', discount: '-15%', rating: 4.7, reviewsCount: 86 },
-        { id: 'prod-6', productId: 'prod-6', name: 'مشد يومي مربع', nameAr: 'مشد يومي مربع', nameEn: 'Daily Square Shaper', price: 195, originalPrice: 250, image: '/assets/home/product-beige-square-hd.png', rating: 4.7, reviewsCount: 96 }
-      ]
+      // Empty on purpose: with no curated tiles the section shows the real catalogue.
+      //
+      // It used to ship four tiles carrying their own name, price, rating and review count —
+      // «4.9 من 112 تقييم» for products that do not exist — and linking to `prod-2`, `prod-3`,
+      // `prod-4` and `prod-6`, which are mock ids, not products. Every tile on the store's first
+      // page was a dead link advertising a price nothing kept in step with the catalogue.
+      //
+      // Seeding ids in code cannot work here anyway: product ids are GUIDs and differ per
+      // environment, so tiles written here point at nothing the moment they are deployed. If
+      // curation is wanted, the editor has to let an admin pick real products (G11.5).
+      products: []
     },
     {
       id: 'sec-promo',
