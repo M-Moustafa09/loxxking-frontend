@@ -4,6 +4,7 @@ import { ButtonComponent } from '../../../shared/components/ui/button/button.com
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { StoreLayoutComponent } from '../../../shared/components/layout/store-layout/store-layout.component';
 import { ProductCardComponent } from '../../components/product/product-card/product-card.component';
 import { LucideAngularModule, SlidersHorizontal, ChevronDown, Loader2 } from 'lucide-angular';
@@ -61,7 +62,13 @@ export class CategoryPageComponent implements OnInit {
   
   filterOpen = signal(false);
   sortBy = signal('popular');
+  /**
+   * Widened to the catalogue's own range once the products load. The hard-coded 0–200 ceiling was
+   * invisible in the filter panel until you opened it, and it silently hid every product priced
+   * above 200 — fine for the mock catalogue, and fine for nothing else.
+   */
   priceRange = signal([0, 200]);
+  private priceRangeTouched = false;
   showSortDropdown = signal(false);
 
   baseData = signal<any[]>([]);
@@ -76,30 +83,52 @@ export class CategoryPageComponent implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       this.queryString.set(params.get('q') || '');
     });
-    this.productRepo.getCategories().subscribe(cats => {
-      if (cats && cats.length > 0) {
-        this.categoriesSignal.set(cats);
-      }
-    });
   }
 
   ngOnInit() {}
 
   loadData() {
     this.isLoading.set(true);
-    this.productRepo.getProducts().subscribe({
-      next: (prods) => {
+    forkJoin({
+      prods: this.productRepo.getProducts(),
+      cats: this.productRepo.getCategories()
+    }).subscribe({
+      next: ({ prods, cats }) => {
+        if (cats && cats.length > 0) {
+          this.categoriesSignal.set(cats);
+        }
         const slug = this.slug();
-        const data = slug === 'all' 
-          ? prods 
-          : prods.filter(p => (p.category && p.category.toLowerCase() === slug.toLowerCase()) || p.slug === slug);
-        this.baseData.set(data.length > 0 ? data : prods);
+        // A category with nothing in it shows the page's empty state. It used to fall back to the
+        // whole catalogue, so browsing one category quietly listed products from all the others.
+        const data = slug === 'all' ? prods : this.productsInCategory(prods, cats, slug);
+        this.baseData.set(data);
+        this.fitPriceRangeTo(data);
         this.isLoading.set(false);
         this.page.set(1);
       },
       error: () => {
         this.isLoading.set(false);
       }
+    });
+  }
+
+  /**
+   * The API gives a product its category's NAME while the route gives a slug, so comparing the two
+   * directly ("Luxury Shoes" vs "luxury-shoes") never matched and every category page came back
+   * empty. That stayed invisible while an empty result fell back to the entire catalogue. Resolve
+   * the slug through the category list first; the plain slug comparison stays for mock data, whose
+   * products carry a slug in that field.
+   */
+  private productsInCategory(prods: any[], cats: any[], slug: string): any[] {
+    const category = (cats || []).find(c => c.slug === slug);
+    const names = category
+      ? [category.nameEn, category.nameAr].filter(Boolean).map((n: string) => n.toLowerCase())
+      : [];
+    const wanted = slug.toLowerCase();
+
+    return prods.filter(p => {
+      const value = (p.category || '').toLowerCase();
+      return names.includes(value) || value === wanted || p.slug === slug;
     });
   }
 
@@ -135,16 +164,29 @@ export class CategoryPageComponent implements OnInit {
 
   setPriceMin(e: Event) {
     const val = +(e.target as HTMLInputElement).value;
+    this.priceRangeTouched = true;
     this.priceRange.set([val, this.priceRange()[1]]);
   }
 
   setPriceMax(e: Event) {
     const val = +(e.target as HTMLInputElement).value;
+    this.priceRangeTouched = true;
     this.priceRange.set([this.priceRange()[0], val]);
   }
 
+  /** Open the price filter wide enough to show everything, until the shopper narrows it himself. */
+  private fitPriceRangeTo(prods: any[]): void {
+    if (this.priceRangeTouched || prods.length === 0) return;
+
+    const prices = prods.map(p => Number(p.price) || 0);
+    const max = Math.max(...prices, 0);
+    this.priceRange.set([0, Math.max(200, Math.ceil(max))]);
+  }
+
   resetFilter() {
-    this.priceRange.set([0, 200]);
+    // "Reset" means show everything again, so it goes back to the catalogue's range, not to 200.
+    this.priceRangeTouched = false;
+    this.fitPriceRangeTo(this.baseData());
     this.filterOpen.set(false);
   }
 }

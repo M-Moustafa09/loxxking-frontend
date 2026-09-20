@@ -98,6 +98,10 @@ export class ProductDetailPageComponent {
         };
       };
 
+      // A product that cannot be loaded leaves `product` undefined, which renders this page's own
+      // "not available" block. It used to fall back to a local mock instead — and when nothing
+      // matched, `findLocalProduct` returns the FIRST mock, so a shopper following a dead link was
+      // shown a different product, at that product's price, as though they had asked for it.
       this.productRepo.getProductById(id).subscribe({
         next: (prod) => {
           if (prod) {
@@ -105,11 +109,10 @@ export class ProductDetailPageComponent {
           } else {
             this.productRepo.getProductBySlug(id).subscribe(p => {
               if (p) setProductData(p);
-              else setProductData(this.productRepo.findLocalProduct(id));
             });
           }
         },
-        error: () => setProductData(this.productRepo.findLocalProduct(id))
+        error: () => {}
       });
     });
   }
