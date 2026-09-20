@@ -89,20 +89,40 @@
         <nav class="dashboard-sidebar__nav">
           <ng-container *ngFor="let item of visibleLinks">
             <div class="dashboard-sidebar__nav-group" [class.has-children]="item.children?.length">
-              <button
-                type="button"
+              <!-- An entry that leaves for the CRM is a real link, as it is in the CRM's own sidebar:
+                   the address shows on hover and middle-click opens it in a new tab. -->
+              <a
+                *ngIf="!item.children?.length && item.externalUrl; else navRowButton"
                 class="dashboard-sidebar__nav-row"
-                [class.is-active]="isRouteActive(pathname, item.path || '') || (item.children && item.children.length > 0 && isRouteActive(pathname, item.children[0].path))"
-                (click)="item.children?.length ? openSubmenu(item.key) : (item.path && openPage(item.path))"
+                [href]="item.externalUrl"
+                (click)="closeSidebar()"
               >
-                <span class="dashboard-sidebar__nav-main">
-                  <lucide-icon [img]="item.icon" size="17"></lucide-icon>
-                  <span>{{ item.label | translate }}</span>
-                </span>
-                <lucide-icon [img]="ChevronLeftIcon" size="15"></lucide-icon>
-              </button>
+                <ng-container *ngTemplateOutlet="navRowContent; context: { $implicit: item }"></ng-container>
+              </a>
+
+              <ng-template #navRowButton>
+                <button
+                  type="button"
+                  class="dashboard-sidebar__nav-row"
+                  [class.is-active]="isRouteActive(pathname, item.path) || (item.children && item.children.length > 0 && isRouteActive(pathname, item.children[0].path))"
+                  (click)="item.children?.length ? openSubmenu(item.key) : openEntry(item)"
+                >
+                  <ng-container *ngTemplateOutlet="navRowContent; context: { $implicit: item }"></ng-container>
+                </button>
+              </ng-template>
             </div>
           </ng-container>
+
+          <ng-template #navRowContent let-item>
+            <span class="dashboard-sidebar__nav-main">
+              <span class="crm-menu-icon" *ngIf="item.iconHtml; else storeItemIcon" [innerHTML]="item.iconHtml"></span>
+              <ng-template #storeItemIcon>
+                <lucide-icon [img]="item.icon" size="17"></lucide-icon>
+              </ng-template>
+              <span>{{ item.label | translate }}</span>
+            </span>
+            <lucide-icon [img]="ChevronLeftIcon" size="15"></lucide-icon>
+          </ng-template>
 
           <p class="dashboard-sidebar__empty" *ngIf="visibleLinks.length === 0">لا توجد نتائج مطابقة.</p>
         </nav>
@@ -120,29 +140,51 @@
 
         <div class="dashboard-sidebar__submenu-title">
           <span class="dashboard-sidebar__submenu-title-icon">
-            <lucide-icon [img]="activeSubmenu.icon" size="18"></lucide-icon>
+            <span class="crm-menu-icon" *ngIf="activeSubmenu.iconHtml; else submenuTitleIcon" [innerHTML]="activeSubmenu.iconHtml"></span>
+            <ng-template #submenuTitleIcon>
+              <lucide-icon [img]="activeSubmenu.icon" size="18"></lucide-icon>
+            </ng-template>
           </span>
           <strong>{{ activeSubmenu.label | translate }}</strong>
         </div>
 
         <div class="dashboard-sidebar__submenu-list">
-          <button
-            *ngFor="let child of activeSubmenu.children"
-            type="button"
-            class="dashboard-sidebar__submenu-page-row"
-            [class.is-active]="isRouteActive(pathname, child.path)"
-            (click)="openPage(child.path)"
-          >
+          <ng-container *ngFor="let child of activeSubmenu.children">
+            <a
+              *ngIf="child.externalUrl; else submenuRowButton"
+              class="dashboard-sidebar__submenu-page-row"
+              [href]="child.externalUrl"
+              (click)="closeSidebar()"
+            >
+              <ng-container *ngTemplateOutlet="submenuRowContent; context: { $implicit: child }"></ng-container>
+            </a>
+
+            <ng-template #submenuRowButton>
+              <button
+                type="button"
+                class="dashboard-sidebar__submenu-page-row"
+                [class.is-active]="isRouteActive(pathname, child.path)"
+                (click)="openEntry(child)"
+              >
+                <ng-container *ngTemplateOutlet="submenuRowContent; context: { $implicit: child }"></ng-container>
+              </button>
+            </ng-template>
+          </ng-container>
+
+          <ng-template #submenuRowContent let-child>
             <span class="dashboard-sidebar__submenu-page-icon">
-              <ng-container *ngIf="child.key.includes('add'); else submenuIcon">
-                +
-              </ng-container>
-              <ng-template #submenuIcon>
-                <lucide-icon [img]="activeSubmenu.icon" size="15"></lucide-icon>
+              <span class="crm-menu-icon" *ngIf="child.iconHtml; else storeChildIcon" [innerHTML]="child.iconHtml"></span>
+              <ng-template #storeChildIcon>
+                <ng-container *ngIf="child.key.includes('add'); else submenuIcon">
+                  +
+                </ng-container>
+                <ng-template #submenuIcon>
+                  <lucide-icon [img]="activeSubmenu.icon" size="15"></lucide-icon>
+                </ng-template>
               </ng-template>
             </span>
             <span>{{ child.label | translate }}</span>
-          </button>
+          </ng-template>
         </div>
       </section>
 
