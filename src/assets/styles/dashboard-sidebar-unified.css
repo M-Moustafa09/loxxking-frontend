@@ -270,3 +270,56 @@
 .dashboard-layout-page .dashboard-sidebar__hero {
   outline: 0 !important;
 }
+
+/* ── قائمة الـ CRM داخل لوحة المتجر ──────────────────────────────────────────
+   الأدمن الذي يدخل من «Loxxking System» في قائمة لوكسيرا يجد هنا نفس أقسام الـ CRM،
+   بأيقوناتها نفسها كما تُسلَّم من Sidebar.cshtml. الأيقونة تصل كـ SVG جاهز ويُحقن عبر
+   innerHTML، فلا يحمل خاصية تحديد نطاق مكوّن Angular ولا تصله أنماط المكوّن — لذلك
+   ::ng-deep على العنصر الداخلي وحده.
+
+   القيم أدناه منقولة حرفيًا من Sidebar.cshtml (#18a088 لون الأيقونة والتحويم،
+   #f6fbfa خلفية التحويم) ليظهر الصفّان بنفس اللون في الواجهتين. */
+.dashboard-sidebar .crm-menu-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 17px !important;
+  height: 17px !important;
+  color: #18a088 !important;
+}
+
+.dashboard-sidebar .crm-menu-icon ::ng-deep svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.dashboard-sidebar__nav-main > svg,
+.dashboard-sidebar__nav-row > svg {
+  color: #18a088 !important;
+}
+
+.dashboard-sidebar__nav-row:hover,
+.dashboard-sidebar__nav button.dashboard-sidebar__nav-row:hover,
+.dashboard-sidebar__nav-row.is-active {
+  background: #f6fbfa !important;
+  color: #18a088 !important;
+}
+
+.dashboard-sidebar__submenu-page-row .crm-menu-icon {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+/* صفوف الـ CRM هي روابط حقيقية <a> وليست أزرارًا، تمامًا كما في Sidebar.cshtml،
+   حتى يظهر العنوان عند التحويم ويعمل فتحها في تبويب جديد. تبقى بنفس شكل بقية الصفوف. */
+a.dashboard-sidebar__nav-row,
+a.dashboard-sidebar__submenu-page-row {
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
