@@ -69,9 +69,16 @@ export class ProductsComponent {
 
     if (configured.length) {
       if (!this.catalogueLoaded()) return [];
-      return configured
+
+      const resolved = configured
         .map((tile: any) => this.resolveTile(tile))
         .filter((tile: any) => tile !== null);
+
+      // Every tile pointing at nothing means the saved configuration is stale, not that the store
+      // is empty — which is exactly the state an existing install is in, since its tiles still name
+      // the old mock ids. Show the catalogue rather than an empty shelf; a tile that resolves is
+      // still honoured, so real curation keeps working.
+      if (resolved.length > 0) return resolved;
     }
 
     if (this.liveProducts().length > 0) return this.liveProducts();
