@@ -148,85 +148,127 @@ export class ProductRepositoryImpl implements IProductRepository {
     return products[0];
   }
 
+  /**
+   * Mock data is a development convenience, and it may ONLY be served when a mock flag asks for it.
+   *
+   * It used to be served as a fallback as well: an API error, or a catalogue that came back empty,
+   * silently produced eight invented products with invented prices and invented reviews, and the
+   * shopper had no way to tell. On production both flags are off, so a single failed request was
+   * enough. A real failure must look like a failure — the pages already have empty and not-found
+   * states for it.
+   */
+  private get useMocks(): boolean {
+    return environment.useMockProducts || environment.useMockData;
+  }
+
+  /** Categories and reviews have never had a products-only flag; they follow `useMockData` alone. */
+  private get useMockCatalogue(): boolean {
+    return environment.useMockData;
+  }
+
+  private reportFailure(what: string, error: unknown): void {
+    console.error(`[storefront] ${what} could not be loaded from the API.`, error);
+  }
+
   getProducts(): Observable<Product[]> {
-    if (!environment.useMockProducts && !environment.useMockData) {
+    if (!this.useMocks) {
       return this.http.get<any>(`${environment.apiBaseUrl}/products`).pipe(
         map(res => {
           const items = res?.data ?? res ?? [];
-          if (!Array.isArray(items) || items.length === 0) return products;
+          if (!Array.isArray(items)) return [];
           return items.map(p => this.mapProduct(p));
         }),
-        catchError(() => of(products))
+        catchError(error => {
+          this.reportFailure('The product list', error);
+          return of([] as Product[]);
+        })
       );
     }
     return of(products);
   }
 
   getProductById(id: string): Observable<Product | undefined> {
-    if (!environment.useMockProducts && !environment.useMockData) {
+    if (!this.useMocks) {
       const guid = this.getRealProductId(id) || id;
       return this.http.get<any>(`${environment.apiBaseUrl}/products/${guid}`).pipe(
         map(res => {
           const p = res?.data ?? res;
-          return p ? this.mapProduct(p) : this.findLocalProduct(id);
+          return p ? this.mapProduct(p) : undefined;
         }),
-        catchError(() => of(this.findLocalProduct(id)))
+        catchError(error => {
+          this.reportFailure(`Product ${id}`, error);
+          return of(undefined);
+        })
       );
     }
     return of(this.findLocalProduct(id));
   }
 
   getProductBySlug(slug: string): Observable<Product | undefined> {
-    if (!environment.useMockProducts && !environment.useMockData) {
+    if (!this.useMocks) {
       return this.http.get<any>(`${environment.apiBaseUrl}/products/slug/${slug}`).pipe(
         map(res => {
           const p = res?.data ?? res;
-          return p ? this.mapProduct(p) : this.findLocalProduct(slug);
+          return p ? this.mapProduct(p) : undefined;
         }),
-        catchError(() => of(this.findLocalProduct(slug)))
+        catchError(error => {
+          this.reportFailure(`Product ${slug}`, error);
+          return of(undefined);
+        })
       );
     }
     return of(this.findLocalProduct(slug));
   }
 
   getCategories(): Observable<Category[]> {
-    if (!environment.useMockData) {
+    if (!this.useMockCatalogue) {
       return this.http.get<any>(`${environment.apiBaseUrl}/categories`).pipe(
         map(res => {
           const items = res?.data ?? res ?? [];
-          if (!Array.isArray(items) || items.length === 0) return categories;
+          if (!Array.isArray(items)) return [];
           return items.map(c => this.mapCategory(c));
         }),
-        catchError(() => of(categories))
+        catchError(error => {
+          this.reportFailure('The category list', error);
+          return of([] as Category[]);
+        })
       );
     }
     return of(categories);
   }
 
   getCategoryBySlug(slug: string): Observable<Category | undefined> {
-    if (!environment.useMockData) {
+    if (!this.useMockCatalogue) {
       return this.http.get<any>(`${environment.apiBaseUrl}/categories/slug/${slug}`).pipe(
         map(res => {
           const c = res?.data ?? res;
-          return c ? this.mapCategory(c) : categories.find(cat => cat.slug === slug);
+          return c ? this.mapCategory(c) : undefined;
         }),
-        catchError(() => of(categories.find(c => c.slug === slug)))
+        catchError(error => {
+          this.reportFailure(`Category ${slug}`, error);
+          return of(undefined);
+        })
       );
     }
     return of(categories.find(c => c.slug === slug));
   }
 
   getReviews(productId?: string): Observable<Review[]> {
-    if (!environment.useMockData) {
+    if (!this.useMockCatalogue) {
       const guid = productId ? this.getRealProductId(productId) : undefined;
       const url = guid ? `${environment.apiBaseUrl}/reviews?productId=${guid}` : `${environment.apiBaseUrl}/reviews`;
       return this.http.get<any>(url).pipe(
         map(res => {
           const items = res?.data ?? res ?? [];
-          if (!Array.isArray(items)) return reviews;
+          if (!Array.isArray(items)) return [];
           return items.map(r => this.mapReview(r));
         }),
-        catchError(() => of(productId ? reviews.filter(r => r.productId === productId) : reviews))
+        // Invented reviews are the worst thing on this page to show as real: no reviews at all is
+        // honest, someone else's words under this product are not.
+        catchError(error => {
+          this.reportFailure('Reviews', error);
+          return of([] as Review[]);
+        })
       );
     }
     if (productId) {
@@ -236,7 +278,7 @@ export class ProductRepositoryImpl implements IProductRepository {
   }
 
   getRealProductId(mockId: string): string {
-    if (!mockId) return GUID_MAP['prod-1'];
+    if (!mockId) return this.useMocks ? GUID_MAP['prod-1'] : '';
 
     // If it's already a standard GUID format
     if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(mockId)) {
@@ -246,6 +288,11 @@ export class ProductRepositoryImpl implements IProductRepository {
     const resolved = ID_ALIAS_MAP[mockId] || mockId;
     if (GUID_MAP[resolved]) return GUID_MAP[resolved];
     if (GUID_MAP[mockId]) return GUID_MAP[mockId];
+
+    // Hand back what we were given rather than a guess. Guessing here sent a request for one
+    // product and answered it with another: an unknown id used to resolve to prod-1's GUID, so the
+    // shopper saw a different product's page — or left a review on it.
+    if (!this.useMocks) return mockId;
 
     const product = this.findLocalProduct(mockId);
     if (product?.guid) return product.guid;
