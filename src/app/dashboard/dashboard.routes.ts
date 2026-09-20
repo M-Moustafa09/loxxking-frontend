@@ -38,8 +38,8 @@ export const DASHBOARD_ROUTES: Routes = [
   },
   {
     path: 'products',
-    redirectTo: 'store-customizer',
-    pathMatch: 'full'
+    canActivate: [dashboardGuard],
+    loadComponent: () => import('./pages/products/products-page.component').then(m => m.ProductsPageComponent)
   },
   {
     path: 'categories',

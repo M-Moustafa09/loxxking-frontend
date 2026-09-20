@@ -1,0 +1,284 @@
+/* Products screen — borrows the store-customizer palette (white cards, gray-200 rules, the
+   blue-600 primary) so the two dashboard pages look like one product. */
+
+.lk-products-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  font-size: 13px;
+}
+
+.lk-products-table th {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lk-products-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.lk-products-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lk-products-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.lk-products-thumb {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.lk-products-thumb--empty {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.lk-products-code {
+  display: inline-block;
+  padding: 2px 9px;
+  border: 1px solid #ccecf6;
+  border-radius: 999px;
+  background: #eaf8fc;
+  color: #178caf;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* A product with no code still syncs, but the CRM cannot resolve a warehouse for its lines. */
+.lk-products-code--missing {
+  border-color: #fde2e4;
+  background: #fef2f3;
+  color: #c0405a;
+  font-family: inherit;
+}
+
+.lk-products-action {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+
+.lk-products-action:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.lk-products-action--danger:hover {
+  border-color: #fecdd3;
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+/* ---- modal ---- */
+
+.lk-products-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.lk-products-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(15, 23, 42, .45);
+  cursor: pointer;
+}
+
+.lk-products-modal {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, .22);
+}
+
+.lk-products-modal--sm {
+  max-width: 420px;
+}
+
+.lk-products-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.lk-products-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lk-products-field > span {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lk-products-field input[type="text"],
+.lk-products-field input[type="number"],
+.lk-products-field select,
+.lk-products-field textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.lk-products-field input:focus,
+.lk-products-field select:focus,
+.lk-products-field textarea:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, .18);
+}
+
+.lk-products-field select:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.lk-products-field textarea {
+  resize: vertical;
+}
+
+.lk-products-hint {
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.lk-products-error {
+  padding: 9px 12px;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ---- images ---- */
+
+.lk-products-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lk-products-image {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.lk-products-image img {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.lk-products-image button {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  cursor: pointer;
+}
+
+.lk-products-image-add {
+  display: flex;
+  width: 72px;
+  height: 72px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.lk-products-image-add:hover {
+  border-color: #60a5fa;
+  color: #2563eb;
+}
+
+.lk-products-image-add input {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .lk-products-table thead {
+    display: none;
+  }
+
+  .lk-products-table tbody tr {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 2px 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .lk-products-table td {
+    padding: 2px 0;
+    border: none;
+  }
+
+  .lk-products-table td:first-child {
+    grid-row: 1 / span 3;
+  }
+}

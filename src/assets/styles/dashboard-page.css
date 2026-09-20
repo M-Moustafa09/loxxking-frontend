@@ -2301,6 +2301,14 @@
             outline: none;
         }
 
+        /* The gear carries no label, so it drops the pill's side padding and goes round —
+           same palette as the text chips it replaced. */
+        .dashboard-home__header-actions > button.dashboard-home__settings-button {
+            width: 25px;
+            padding: 0;
+            border-radius: 999px;
+        }
+
 .dashboard-home__approval-button > span {
     position: absolute;
     top: -7px;
@@ -2399,8 +2407,14 @@
 }
 
 @media (max-width: 640px) {
+    /* Hidden on a narrow screen because the old text chips did not fit. The lone gear does, and
+       it is the way into the products screen — so it is exempt. */
     .dashboard-home__header-actions {
         display: none;
+    }
+
+    .dashboard-layout-page .dashboard-home__header-actions {
+        display: flex;
     }
 
     .dashboard-filters {
