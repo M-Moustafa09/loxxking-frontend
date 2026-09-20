@@ -79,7 +79,7 @@
             },
             "backend": {
               "outputPath": {
-                "base": "../../Backend/Loxxking/loxxking-backend-clean.Api/wwwroot",
+                "base": "../BackEnd/loxxking-backend-clean.Api/wwwroot",
                 "browser": ""
               },
               "deleteOutputPath": false,
