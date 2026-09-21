@@ -1734,5 +1734,36 @@
     "SAVING": "جاري الحفظ...",
     "DELETE_TITLE": "حذف المنتج",
     "DELETE_CONFIRM": "هل أنت متأكد من حذف"
+  },
+  "ADMIN_SETTINGS_MENU": {
+    "TITLE": "الإعدادات",
+    "ADD_PRODUCT": "إضافة منتج",
+    "MANAGE_CATEGORIES": "إدارة الأقسام"
+  },
+  "ADMIN_CATEGORIES": {
+    "TITLE": "الأقسام",
+    "SUBTITLE": "أضف أقسام المتجر وعدّلها واحذفها. القسم يظهر في قائمة الأقسام عند إضافة منتج.",
+    "SEARCH_PLACEHOLDER": "ابحث باسم القسم...",
+    "ADD": "إضافة قسم",
+    "LOADING": "جاري تحميل الأقسام...",
+    "EMPTY": "لا توجد أقسام.",
+    "COL_IMAGE": "الصورة",
+    "COL_NAME_AR": "الاسم بالعربية",
+    "COL_NAME_EN": "الاسم بالإنجليزية",
+    "COL_PRODUCTS": "عدد المنتجات",
+    "COL_ACTIONS": "إجراءات",
+    "EDIT": "تعديل",
+    "DELETE": "حذف",
+    "ADD_TITLE": "إضافة قسم جديد",
+    "EDIT_TITLE": "تعديل القسم",
+    "FIELD_NAME_AR": "الاسم بالعربية",
+    "FIELD_NAME_EN": "الاسم بالإنجليزية",
+    "FIELD_IMAGE": "صورة القسم (اختياري)",
+    "IMAGE_HINT": "PNG أو JPG أو WEBP، وأقصى حجم للصورة 2 ميجابايت.",
+    "REMOVE_IMAGE": "حذف الصورة",
+    "SAVE": "حفظ",
+    "SAVING": "جاري الحفظ...",
+    "DELETE_TITLE": "حذف القسم",
+    "DELETE_CONFIRM": "هل أنت متأكد من حذف القسم"
   }
 }
