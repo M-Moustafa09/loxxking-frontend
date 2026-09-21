@@ -7,6 +7,14 @@ import { LangService } from '../../../../core/services/lang/lang.service';
 
 import { LocalizeFieldPipe } from '../../../../shared/pipes/localize-field.pipe';
 
+/**
+ * «تسوق حسب الفئة» shows the store's real categories — the ones managed in «إدارة الأقسام».
+ *
+ * It used to prefer tiles typed into the home-page config (Women's / Sports / Postpartum / Men's),
+ * which were not categories at all: they linked to slugs no category had, and a product could never
+ * be filed under them. The config now only owns the section's title and visibility; any tiles still
+ * saved in an old config are ignored.
+ */
 @Component({
   selector: 'app-categories',
   standalone: true,
@@ -18,26 +26,10 @@ export class CategoriesComponent {
   private productRepo = inject(ProductRepositoryImpl);
   readonly langService = inject(LangService);
 
-  liveCategories = signal<any[]>([]);
-
-  homeCategories = [
-    { id: '1', name: 'STOREFRONT.AUTO_STR_241', label: 'STOREFRONT.AUTO_STR_241', image: '/assets/home/category-full.png', path: '/categories/full' },
-    { id: '2', name: 'COMMON.WAISTTRAINERS', label: 'COMMON.WAISTTRAINERS', image: '/assets/home/category-waist.png', path: '/categories/waist' },
-    { id: '3', name: 'STOREFRONT.AUTO_STR_348', label: 'STOREFRONT.AUTO_STR_348', image: '/assets/home/category-chest.png', path: '/categories/chest' }
-  ];
+  readonly categories = signal<any[]>([]);
 
   constructor() {
-    this.productRepo.getCategories().subscribe(cats => {
-      if (cats && cats.length > 0) {
-        this.liveCategories.set(cats.map(c => ({
-          id: c.id,
-          name: this.langService.storefrontLang() === 'ar' ? (c.nameAr || c.nameEn) : (c.nameEn || c.nameAr),
-          label: this.langService.storefrontLang() === 'ar' ? (c.nameAr || c.nameEn) : (c.nameEn || c.nameAr),
-          image: c.image || '/assets/home/category-full.png',
-          path: `/categories/${c.slug || c.id}`
-        })));
-      }
-    });
+    this.productRepo.getCategories().subscribe(cats => this.categories.set(cats ?? []));
   }
 
   get title(): string {
@@ -53,24 +45,18 @@ export class CategoriesComponent {
   }
 
   get displayCategories(): any[] {
-    if (this.config?.categories && this.config.categories.length > 0) {
-      return this.config.categories;
-    }
-    if (this.liveCategories().length > 0) {
-      return this.liveCategories();
-    }
-    return this.homeCategories;
+    return this.categories();
   }
-  
+
+  /** The category page's route is `category/:slug`; `/categories/<slug>` matched nothing and fell back to home. */
   getCategoryPath(category: any): string {
-    return category.path ? category.path : (category.id ? `/categories/${category.id}` : '/categories');
+    return `/category/${category.slug || category.id}`;
   }
-  
+
   getCategoryLabel(category: any): string {
     const isAr = this.langService.storefrontLang() === 'ar';
-    return isAr 
-      ? (category.nameAr || category.nameEn || category.name || category.label || '') 
-      : (category.nameEn || category.nameAr || category.name || category.label || '');
+    return isAr
+      ? (category.nameAr || category.nameEn || '')
+      : (category.nameEn || category.nameAr || '');
   }
 }
-

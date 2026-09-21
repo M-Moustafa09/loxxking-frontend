@@ -46,12 +46,9 @@ const initialConfig: PageConfig = {
       titleAr: 'تسوق حسب الفئة',
       titleEn: 'Shop by Category',
       showTitle: true,
-      categories: [
-        { id: 'women', name: 'نساء', nameAr: 'نساء', nameEn: "Women's", image: '/assets/home/category-women-hd.png' },
-        { id: 'sport', name: 'رياضي', nameAr: 'رياضي', nameEn: 'Sports', image: '/assets/home/category-sport-hd.png' },
-        { id: 'postpartum', name: 'ما بعد الولادة', nameAr: 'ما بعد الولادة', nameEn: 'Postpartum', image: '/assets/home/category-postpartum-hd.png' },
-        { id: 'men', name: 'رجالي', nameAr: 'رجالي', nameEn: "Men's", image: '/assets/home/category-men-hd.png' }
-      ]
+      // Empty on purpose: the section shows the store's real categories (managed in «إدارة الأقسام»).
+      // The four tiles that used to sit here were not categories — they linked to slugs nothing had.
+      categories: []
     },
     {
       id: 'sec-bestsellers',
