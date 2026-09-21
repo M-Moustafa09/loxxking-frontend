@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { catchError, of, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
+import { isReturningVisitor } from '../../utils/visitor-status.util';
 
 export interface AppContext {
   country: string;
@@ -46,15 +47,32 @@ export class ContextService {
       });
   }
 
-  logVisit(page: string = 'home'): void {
+  /**
+   * One visit per page load (not per in-app navigation). The backend also forwards it to the
+   * Luxira CRM, which pops up a notification and emails the owner for every visit — so the
+   * dashboard, and the storefront preview the dashboard shows in an iframe, are not visits.
+   */
+  logVisit(page: string, language: string): void {
     if (this.visitLogged) return;
+    if (typeof window !== 'undefined') {
+      const inIframe = window.parent !== window;
+      if (inIframe || page.startsWith('/admin')) return;
+    }
     this.visitLogged = true;
 
-    // Send the visit tracking request explicitly
+    // Arabic slugs arrive percent-encoded; decode so the CRM and the email show readable text.
+    try {
+      page = decodeURIComponent(page);
+    } catch {
+      // Malformed escape: keep the raw path.
+    }
+
     // If countryId is known, pass it, otherwise backend resolves from IP or defaults.
-    this.http.post(`${environment.apiUrl}/site-visits`, { 
-      page, 
-      countryId: this.currentCountryId() 
+    this.http.post(`${environment.apiUrl}/site-visits`, {
+      page: page.slice(0, 300),
+      countryId: this.currentCountryId(),
+      language,
+      isNewVisitor: !isReturningVisitor()
     })
       .pipe(catchError(() => of(null)))
       .subscribe();
