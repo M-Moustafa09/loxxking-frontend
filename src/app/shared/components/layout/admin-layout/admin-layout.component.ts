@@ -90,6 +90,8 @@ export class AdminLayoutComponent implements OnInit {
   pathname = '';
   
   isSidebarOpen = false;
+  /** The header gear opens a small menu: add a product, or manage categories. */
+  isSettingsMenuOpen = false;
   sidebarView: SidebarView = 'menu';
   activeSubmenuKey: string | null = null;
   menuSearch = '';
@@ -235,6 +237,11 @@ export class AdminLayoutComponent implements OnInit {
     if (!path) return false;
     if (path === '/admin') return pathname === '/admin' || pathname === '/admin/';
     return pathname === path || pathname.startsWith(`${path}/`);
+  }
+
+  openSettingsItem(path: string): void {
+    this.isSettingsMenuOpen = false;
+    this.router.navigateByUrl(path);
   }
 
   closeSidebar(): void {

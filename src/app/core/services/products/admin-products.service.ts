@@ -32,6 +32,17 @@ export interface AdminCategory {
   id: string;
   nameAr: string;
   nameEn: string;
+  slug: string;
+  image: string;
+  /** Live products in the category; one that still holds products cannot be deleted. */
+  productCount: number;
+}
+
+/** What the category form owns. `image` is a URL, a new data URL, or '' for none. */
+export interface CategoryFormValue {
+  nameAr: string;
+  nameEn: string;
+  image: string;
 }
 
 /** What the add/edit form owns. Everything else on the product is preserved as-is. */
@@ -74,10 +85,34 @@ export class AdminProductsService {
       map(res => (res?.data ?? []).map(row => ({
         id: row.id,
         nameAr: row.nameAr ?? '',
-        nameEn: row.nameEn ?? ''
+        nameEn: row.nameEn ?? '',
+        slug: row.slug ?? '',
+        image: row.image ?? '',
+        productCount: Number(row.productCount ?? 0)
       }))),
       tap(categories => this.categoriesSignal.set(categories))
     );
+  }
+
+  createCategory(form: CategoryFormValue): Observable<unknown> {
+    return this.http.post(`${environment.apiBaseUrl}/categories`, {
+      nameAr: form.nameAr,
+      nameEn: form.nameEn,
+      image: form.image
+    });
+  }
+
+  updateCategory(id: string, form: CategoryFormValue): Observable<unknown> {
+    return this.http.put(`${environment.apiBaseUrl}/categories/${id}`, {
+      id,
+      nameAr: form.nameAr,
+      nameEn: form.nameEn,
+      image: form.image
+    });
+  }
+
+  removeCategory(id: string): Observable<unknown> {
+    return this.http.delete(`${environment.apiBaseUrl}/categories/${id}`);
   }
 
   create(form: ProductFormValue): Observable<unknown> {

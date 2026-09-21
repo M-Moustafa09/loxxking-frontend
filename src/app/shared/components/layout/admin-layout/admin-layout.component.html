@@ -15,17 +15,40 @@
     </div>
 
     <div class="dashboard-home__header-actions" [attr.aria-label]="'DASHBOARD.AUTO_STR_48' | translate">
-      <!-- One gear in place of the old «عرض الأسعار» / «عرض المنتجات» pair: both led to the same
-           place, and until now that place was a redirect back to this very page. -->
-      <button
-        type="button"
-        class="dashboard-home__settings-button"
-        (click)="router.navigateByUrl('/admin/products')"
-        [attr.title]="'ADMIN_PRODUCTS.HEADER_BUTTON' | translate"
-        [attr.aria-label]="'ADMIN_PRODUCTS.HEADER_BUTTON' | translate"
-      >
-        <lucide-icon [img]="SettingsIcon" size="15" strokeWidth="2.2"></lucide-icon>
-      </button>
+      <!-- One gear in place of the old «عرض الأسعار» / «عرض المنتجات» pair. It opens a small menu:
+           the products screen and the categories screen. -->
+      <div class="lk-settings-menu">
+        <button
+          type="button"
+          class="dashboard-home__settings-button"
+          (click)="isSettingsMenuOpen = !isSettingsMenuOpen"
+          [attr.aria-expanded]="isSettingsMenuOpen"
+          aria-haspopup="menu"
+          [attr.title]="'ADMIN_SETTINGS_MENU.TITLE' | translate"
+          [attr.aria-label]="'ADMIN_SETTINGS_MENU.TITLE' | translate"
+        >
+          <lucide-icon [img]="SettingsIcon" size="15" strokeWidth="2.2"></lucide-icon>
+        </button>
+
+        <ng-container *ngIf="isSettingsMenuOpen">
+          <button
+            type="button"
+            class="lk-settings-menu__backdrop"
+            (click)="isSettingsMenuOpen = false"
+            [attr.aria-label]="'COMMON.CLOSE' | translate"
+          ></button>
+          <div class="lk-settings-menu__list" role="menu">
+            <button type="button" role="menuitem" class="lk-settings-menu__item" (click)="openSettingsItem('/admin/products')">
+              <lucide-icon [img]="PackageIcon" size="16"></lucide-icon>
+              <span>{{ 'ADMIN_SETTINGS_MENU.ADD_PRODUCT' | translate }}</span>
+            </button>
+            <button type="button" role="menuitem" class="lk-settings-menu__item" (click)="openSettingsItem('/admin/categories')">
+              <lucide-icon [img]="TagIcon" size="16"></lucide-icon>
+              <span>{{ 'ADMIN_SETTINGS_MENU.MANAGE_CATEGORIES' | translate }}</span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
     </div>
   </header>
 

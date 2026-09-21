@@ -1745,5 +1745,36 @@
     "SAVING": "Saving...",
     "DELETE_TITLE": "Delete product",
     "DELETE_CONFIRM": "Are you sure you want to delete"
+  },
+  "ADMIN_SETTINGS_MENU": {
+    "TITLE": "Settings",
+    "ADD_PRODUCT": "Add product",
+    "MANAGE_CATEGORIES": "Manage categories"
+  },
+  "ADMIN_CATEGORIES": {
+    "TITLE": "Categories",
+    "SUBTITLE": "Add, edit and remove the store's categories. A category shows in the list when adding a product.",
+    "SEARCH_PLACEHOLDER": "Search by category name...",
+    "ADD": "Add category",
+    "LOADING": "Loading categories...",
+    "EMPTY": "No categories.",
+    "COL_IMAGE": "Image",
+    "COL_NAME_AR": "Arabic name",
+    "COL_NAME_EN": "English name",
+    "COL_PRODUCTS": "Products",
+    "COL_ACTIONS": "Actions",
+    "EDIT": "Edit",
+    "DELETE": "Delete",
+    "ADD_TITLE": "Add a new category",
+    "EDIT_TITLE": "Edit category",
+    "FIELD_NAME_AR": "Arabic name",
+    "FIELD_NAME_EN": "English name",
+    "FIELD_IMAGE": "Category image (optional)",
+    "IMAGE_HINT": "PNG, JPG or WEBP, up to 2 MB per image.",
+    "REMOVE_IMAGE": "Remove image",
+    "SAVE": "Save",
+    "SAVING": "Saving...",
+    "DELETE_TITLE": "Delete category",
+    "DELETE_CONFIRM": "Are you sure you want to delete the category"
   }
 }
