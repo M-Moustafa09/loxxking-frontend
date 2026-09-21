@@ -56,49 +56,14 @@ export class ProductsComponent {
   }
 
   /**
-   * The configured tiles are a curated ORDER over the catalogue, not a catalogue of their own. Each
-   * one is resolved against the real products and dropped if its product no longer exists, and the
-   * name, price and rating shown are the product's — not whatever was typed into the page config.
-   *
-   * Before this, `config.products` was rendered as-is: the home page advertised products at prices
-   * that were never checked against the catalogue, with invented ratings, linking to ids like
-   * `prod-2` that are not products at all.
+   * Every live product, newest first (the API's order), so a product the admin adds appears here
+   * with no further step. `config.products` — hand-picked tiles saved by the old home editor, on
+   * production the old mock ids — is deliberately ignored: while any tile resolved, the section
+   * showed only the picked products and new ones never reached the home page (owner, 2026-09-21).
    */
   get displayProducts() {
-    const configured = this.config?.products ?? [];
-
-    if (configured.length) {
-      if (!this.catalogueLoaded()) return [];
-
-      const resolved = configured
-        .map((tile: any) => this.resolveTile(tile))
-        .filter((tile: any) => tile !== null);
-
-      // Every tile pointing at nothing means the saved configuration is stale, not that the store
-      // is empty — which is exactly the state an existing install is in, since its tiles still name
-      // the old mock ids. Show the catalogue rather than an empty shelf; a tile that resolves is
-      // still honoured, so real curation keeps working.
-      if (resolved.length > 0) return resolved;
-    }
-
     if (this.liveProducts().length > 0) return this.liveProducts();
     return this.catalogueLoaded() ? [] : homeProducts;
-  }
-
-  /** Returns the real product behind a configured tile, keeping the tile's curated image. */
-  private resolveTile(tile: any): any | null {
-    const wanted = String(tile?.productId ?? tile?.id ?? '').toLowerCase();
-    if (!wanted) return null;
-
-    const product = this.liveProducts().find(p =>
-      String(p.id).toLowerCase() === wanted || String(p.guid ?? '').toLowerCase() === wanted
-    );
-    if (!product) return null;
-
-    return {
-      ...product,
-      images: tile.image ? [tile.image, ...(product.images ?? [])] : product.images
-    };
   }
 
   getLocalizedProductName(product: any): string {
