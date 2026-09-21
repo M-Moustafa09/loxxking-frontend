@@ -502,22 +502,39 @@
   gap: 8px;
 }
 
-/* A number input with its currency shown inside, on the right (the inputs are LTR). */
+/* A caption over each price box, and the currency pinned inside the box on the RIGHT. The inputs
+   are LTR (numbers) inside an RTL page, so logical properties (inline-end) put the currency on the
+   left, over the digits being typed; physical right/padding-right keep them apart. */
 .lk-products-price-input {
-  position: relative;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 0;
 }
 
-.lk-products-field .lk-products-price-input input[type="number"] {
-  padding-inline-end: 48px;
+.lk-products-price-input small {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.lk-products-price-input em {
+.lk-products-price-box {
+  position: relative;
+  display: block;
+}
+
+.lk-products-field .lk-products-price-box input[type="number"] {
+  padding-right: 56px;
+  padding-left: 12px;
+}
+
+.lk-products-price-box em {
   position: absolute;
   top: 50%;
-  inset-inline-end: 10px;
+  right: 10px;
   transform: translateY(-50%);
+  padding-left: 8px;
+  border-left: 1px solid #e5e7eb;
   color: #6b7280;
   font-size: 11px;
   font-style: normal;
@@ -528,7 +545,7 @@
 .lk-products-country-row {
   display: grid;
   grid-template-columns: minmax(80px, 110px) 1fr 1fr auto;
-  align-items: center;
+  align-items: end;
   gap: 8px;
   padding: 8px;
   border: 1px solid #e5e7eb;

@@ -1737,6 +1737,7 @@
     "FIELD_DESCRIPTION": "Description",
     "FIELD_PRICE": "Base price",
     "FIELD_INTL_PRICE": "International price in USD (for any country without its own)",
+    "PRICE_LABEL": "Price",
     "ORIGINAL_PRICE_PLACEHOLDER": "Price before discount (optional)",
     "COUNTRY_PRICES": "Prices by country",
     "COUNTRY_PRICES_HINT": "Pick a country and enter its price in its currency. Visitors from a country without a price see the international USD price.",
