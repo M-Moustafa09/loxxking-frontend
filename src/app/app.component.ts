@@ -33,7 +33,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.contextService.initContext();
-    this.contextService.logVisit('app_init');
+    // The path the visitor landed on (the router has not run yet, so read the address bar).
+    this.contextService.logVisit(window.location.pathname || '/', this.langService.storefrontLang());
 
     // Notify the dashboard whenever the storefront route changes.
     // This enables the LivePreview's "current page" indicator and editor-router sync.
