@@ -1,14 +1,15 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { LucideAngularModule, ImageOff, Pencil, Plus, Search, Trash2, X } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, ImageOff, Pencil, Plus, Search, Trash2, X } from 'lucide-angular';
 
 import { AdminLayoutComponent } from '../../../shared/components/layout/admin-layout/admin-layout.component';
 import { ToastService } from '../../../core/services/toast/toast.service';
 import {
   AdminProduct,
   AdminProductsService,
+  CrmProduct,
   ProductFormValue
 } from '../../../core/services/products/admin-products.service';
 
@@ -32,6 +33,7 @@ export class ProductsPageComponent implements OnInit {
   readonly SearchIcon = Search;
   readonly Trash2Icon = Trash2;
   readonly XIcon = X;
+  readonly ChevronDownIcon = ChevronDown;
 
   readonly products = this.productsService.products;
   readonly categories = this.productsService.categories;
@@ -47,6 +49,27 @@ export class ProductsPageComponent implements OnInit {
 
   form: ProductFormValue = this.emptyForm();
   formError = signal('');
+
+  /**
+   * The CRM product the store product is linked to. The code is never typed: it comes from the
+   * picked product, so a typo can no longer ship orders the CRM cannot find a warehouse for.
+   */
+  readonly crmProducts = signal<CrmProduct[]>([]);
+  readonly crmLoading = signal(false);
+  readonly crmError = signal('');
+  readonly crmSearch = signal('');
+  readonly isPickerOpen = signal(false);
+  readonly selectedCrm = signal<CrmProduct | null>(null);
+
+  /** One CRM product ↔ one store product: codes used by another live product are not offered. */
+  readonly pickableCrm = computed(() => {
+    const editingId = this.editing()?.id ?? null;
+    const term = this.crmSearch().trim().toLowerCase();
+    return this.crmProducts().filter(c =>
+      (!c.linkedProductId || c.linkedProductId === editingId) &&
+      (!term || c.name.toLowerCase().includes(term) || c.productCode.toLowerCase().includes(term))
+    );
+  });
 
   readonly visibleProducts = computed(() => {
     const term = this.search().trim().toLowerCase();
@@ -91,7 +114,9 @@ export class ProductsPageComponent implements OnInit {
     this.form = this.emptyForm();
     this.form.categoryId = this.categories()[0]?.id ?? '';
     this.formError.set('');
+    this.selectedCrm.set(null);
     this.isFormOpen.set(true);
+    this.loadCrmProducts();
   }
 
   openEdit(product: AdminProduct): void {
@@ -106,7 +131,56 @@ export class ProductsPageComponent implements OnInit {
       productCode: product.productCode
     };
     this.formError.set('');
+    this.selectedCrm.set(null);
     this.isFormOpen.set(true);
+    this.loadCrmProducts();
+  }
+
+  /**
+   * On edit the linked CRM product is found by code. An old product whose hand-typed code matches
+   * nothing in the CRM stays unlinked, and cannot be saved until one is picked.
+   */
+  loadCrmProducts(): void {
+    this.crmLoading.set(true);
+    this.crmError.set('');
+    this.crmSearch.set('');
+    this.isPickerOpen.set(false);
+    this.productsService.fetchCrmProducts().subscribe({
+      next: list => {
+        this.crmProducts.set(list);
+        this.crmLoading.set(false);
+        const code = (this.form.productCode ?? '').trim().toLowerCase();
+        if (code) {
+          this.selectedCrm.set(list.find(c => c.productCode.toLowerCase() === code) ?? null);
+        }
+      },
+      error: (err: any) => {
+        this.crmProducts.set([]);
+        this.crmLoading.set(false);
+        this.crmError.set(err?.error?.message || 'تعذر تحميل منتجات لوكسيرا، حاول مرة أخرى.');
+      }
+    });
+  }
+
+  togglePicker(): void {
+    this.isPickerOpen.update(open => !open);
+  }
+
+  updateCrmSearch(event: Event): void {
+    this.crmSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  /** The Arabic name starts as the CRM name; the admin may keep it or change it. */
+  pickCrm(item: CrmProduct): void {
+    const previousName = (this.selectedCrm()?.name ?? '').trim();
+    const currentName = this.form.nameAr.trim();
+    if (!currentName || currentName === previousName) {
+      this.form.nameAr = item.name;
+    }
+    this.selectedCrm.set(item);
+    this.form.productCode = item.productCode;
+    this.isPickerOpen.set(false);
+    this.crmSearch.set('');
   }
 
   closeForm(): void {
@@ -119,7 +193,23 @@ export class ProductsPageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
     input.value = '';
+    this.addImageFiles(files);
+  }
 
+  /** Ctrl+V while the form is open adds a copied image, same as picking a file. */
+  @HostListener('document:paste', ['$event'])
+  pasteImage(event: ClipboardEvent): void {
+    if (!this.isFormOpen()) return;
+    const files = Array.from(event.clipboardData?.items ?? [])
+      .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => !!file);
+    if (files.length === 0) return;   // pasting text into a field keeps working as usual
+    event.preventDefault();
+    this.addImageFiles(files);
+  }
+
+  private addImageFiles(files: File[]): void {
     for (const file of files) {
       if (file.size > MAX_IMAGE_BYTES) {
         this.toast.show(`الصورة «${file.name}» أكبر من 2 ميجابايت`, 'warning');
@@ -153,7 +243,7 @@ export class ProductsPageComponent implements OnInit {
       nameAr: this.form.nameAr.trim(),
       nameEn: this.form.nameEn.trim(),
       description: this.form.description.trim(),
-      productCode: this.form.productCode?.trim() ? this.form.productCode.trim() : null
+      productCode: this.selectedCrm()?.productCode ?? null
     };
 
     const current = this.editing();
@@ -203,6 +293,7 @@ export class ProductsPageComponent implements OnInit {
 
   private validate(): string {
     if (!this.form.categoryId) return 'اختر القسم أولاً';
+    if (!this.selectedCrm()) return 'اختر المنتج من لوكسيرا';
     if (!this.form.nameAr.trim()) return 'الاسم بالعربية مطلوب';
     if (!this.form.nameEn.trim()) return 'الاسم بالإنجليزية مطلوب';
     if (!this.form.description.trim()) return 'الوصف مطلوب';
