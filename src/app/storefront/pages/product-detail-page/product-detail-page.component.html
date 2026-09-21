@@ -20,11 +20,22 @@
         <section class="lk-product-summary">
             <div class="lk-product-gallery">
                 <div class="lk-product-main-image">
-                    <img
-                        [src]="display.images[activeImage()]"
-                        [alt]="display.name"
-                        class="lk-product-main-image__asset lk-product-main-image__asset--{{activeImage()}}"
-                    />
+                    <video
+                        *ngIf="isVideoActive(); else mainImage"
+                        [src]="display.videoUrl"
+                        class="lk-product-main-video"
+                        controls
+                        autoplay
+                        playsinline
+                        preload="metadata"
+                    ></video>
+                    <ng-template #mainImage>
+                        <img
+                            [src]="display.images[activeImage()]"
+                            [alt]="display.name"
+                            class="lk-product-main-image__asset lk-product-main-image__asset--{{activeImage()}}"
+                        />
+                    </ng-template>
 
                     <span *ngIf="display.discount" class="lk-product-discount">-{{display.discount}}%</span>
 
@@ -53,6 +64,19 @@
                             [attr.aria-label]="(langService.storefrontLang() === 'ar' ? 'عرض الصورة ' : 'View image ') + (i + 1)"
                         >
                             <img [src]="img" [alt]="display.name" class="lk-product-thumbnail__image" />
+                        </button>
+                        <button
+                            *ngIf="display.videoUrl"
+                            type="button"
+                            class="lk-product-thumbnail lk-product-thumbnail--video"
+                            [class.is-active]="isVideoActive()"
+                            (click)="activeImage.set(display.images.length)"
+                            [attr.aria-label]="langService.storefrontLang() === 'ar' ? 'تشغيل فيديو المنتج' : 'Play product video'"
+                        >
+                            <img [src]="display.images[0]" alt="" class="lk-product-thumbnail__image" />
+                            <span class="lk-product-thumbnail__play" aria-hidden="true">
+                                <lucide-icon name="play" [img]="Play"></lucide-icon>
+                            </span>
                         </button>
                     </div>
                     <button type="button" class="lk-gallery-arrow" (click)="nextImage()" aria-label="Next image">

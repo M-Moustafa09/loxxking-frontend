@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
@@ -26,6 +26,8 @@ export interface AdminProduct {
   features: string | null;
   shippingPolicy: string | null;
   returnPolicy: string | null;
+  /** The one product video, or null. Uploaded and removed on its own endpoint, not by the form save. */
+  videoUrl: string | null;
 }
 
 export interface AdminCategory {
@@ -174,6 +176,20 @@ export class AdminProductsService {
     });
   }
 
+  /** Replaces the product video. Emits upload progress events, so the form can show a percentage. */
+  uploadVideo(id: string, file: File): Observable<HttpEvent<unknown>> {
+    const body = new FormData();
+    body.append('file', file, file.name);
+    return this.http.post(`${environment.apiBaseUrl}/products/${id}/video`, body, {
+      reportProgress: true,
+      observe: 'events'
+    });
+  }
+
+  removeVideo(id: string): Observable<unknown> {
+    return this.http.delete(`${environment.apiBaseUrl}/products/${id}/video`);
+  }
+
   remove(id: string): Observable<unknown> {
     return this.http.delete(`${environment.apiBaseUrl}/products/${id}`);
   }
@@ -192,7 +208,8 @@ export class AdminProductsService {
       productCode: row.productCode ?? null,
       features: row.features ?? null,
       shippingPolicy: row.shippingPolicy ?? null,
-      returnPolicy: row.returnPolicy ?? null
+      returnPolicy: row.returnPolicy ?? null,
+      videoUrl: row.videoUrl ?? null
     };
   }
 }

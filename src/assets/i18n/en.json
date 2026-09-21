@@ -1753,7 +1753,13 @@
     "CRM_EMPTY": "No matching products.",
     "CRM_HINT": "The code comes from the chosen product and cannot be edited. Products already linked to another store product are not listed.",
     "CRM_UNMATCHED": "The current code is not in Luxira, choose the right product:",
-    "IMAGES_PASTE_HINT": "You can also copy an image and paste it here (Ctrl+V)."
+    "IMAGES_PASTE_HINT": "You can also copy an image and paste it here (Ctrl+V).",
+    "FIELD_VIDEO": "Product video (optional)",
+    "VIDEO_HINT": "MP4 or WebM, up to 30 MB. Shown on the product page after the images.",
+    "ADD_VIDEO": "Choose a video",
+    "REPLACE_VIDEO": "Change video",
+    "REMOVE_VIDEO": "Remove video",
+    "UPLOADING_VIDEO": "Uploading video..."
   },
   "ADMIN_SETTINGS_MENU": {
     "TITLE": "Settings",
