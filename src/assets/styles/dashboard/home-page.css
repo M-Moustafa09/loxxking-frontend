@@ -547,7 +547,13 @@
 
     .lk-home-product-card__body h3 {
         text-align: center;
-        min-height: 38px;
+        /* Always two lines tall, never more: short names keep the cards aligned, long ones end in
+           an ellipsis instead of running into the price below. */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        height: calc(2 * 1.55em);
         margin: 0 0 5px;
         overflow: hidden;
         color: var(--lk-ink);
@@ -558,7 +564,6 @@
     }
 
 .lk-home-product-card__price {
-    margin-top: -20px;
     text-align: center;
     display: grid;
     align-items: baseline;
@@ -1163,7 +1168,6 @@
     }
 
         .lk-home-product-card__body h3 {
-            min-height: clamp(31px, 5vw, 38px);
             font-size: clamp(8px, 1.45vw, 11px);
         }
 
