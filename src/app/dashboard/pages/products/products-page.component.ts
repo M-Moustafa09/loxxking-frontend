@@ -1,8 +1,10 @@
-import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpEventType } from '@angular/common/http';
+import { Observable, filter, of } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { LucideAngularModule, ChevronDown, ImageOff, Pencil, Plus, Search, Trash2, X } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, ImageOff, Pencil, Plus, Search, Trash2, Video, X } from 'lucide-angular';
 
 import { AdminLayoutComponent } from '../../../shared/components/layout/admin-layout/admin-layout.component';
 import { ToastService } from '../../../core/services/toast/toast.service';
@@ -16,6 +18,10 @@ import {
 /** An image bigger than this bloats the JSON body, since images travel inline as data URLs. */
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
+/** Matches the server's limit (ProductVideoRules.MaxBytes); checked here too so a big file fails before uploading. */
+const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
+const VIDEO_TYPES = ['video/mp4', 'video/webm'];
+
 @Component({
   selector: 'app-admin-products-page',
   standalone: true,
@@ -23,7 +29,7 @@ const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
   templateUrl: './products-page.component.html',
   styleUrls: ['./products-page.component.css']
 })
-export class ProductsPageComponent implements OnInit {
+export class ProductsPageComponent implements OnInit, OnDestroy {
   private productsService = inject(AdminProductsService);
   private toast = inject(ToastService);
 
@@ -33,6 +39,7 @@ export class ProductsPageComponent implements OnInit {
   readonly SearchIcon = Search;
   readonly Trash2Icon = Trash2;
   readonly XIcon = X;
+  readonly VideoIcon = Video;
   readonly ChevronDownIcon = ChevronDown;
 
   readonly products = this.productsService.products;
@@ -61,6 +68,16 @@ export class ProductsPageComponent implements OnInit {
   readonly isPickerOpen = signal(false);
   readonly selectedCrm = signal<CrmProduct | null>(null);
 
+  /**
+   * The product video. It is not part of the product save: after the product is saved, a new file is
+   * uploaded, or a removed one deleted, on its own endpoint. `videoPreview` is the saved URL or an
+   * object URL for a file not uploaded yet.
+   */
+  readonly videoFile = signal<File | null>(null);
+  readonly videoPreview = signal('');
+  readonly uploadProgress = signal<number | null>(null);
+  private videoRemoved = false;
+
   /** One CRM product ↔ one store product: codes used by another live product are not offered. */
   readonly pickableCrm = computed(() => {
     const editingId = this.editing()?.id ?? null;
@@ -81,6 +98,10 @@ export class ProductsPageComponent implements OnInit {
       (p.productCode ?? '').toLowerCase().includes(term)
     );
   });
+
+  ngOnDestroy(): void {
+    this.releasePreview();
+  }
 
   ngOnInit(): void {
     this.loadProducts();
@@ -115,6 +136,7 @@ export class ProductsPageComponent implements OnInit {
     this.form.categoryId = this.categories()[0]?.id ?? '';
     this.formError.set('');
     this.selectedCrm.set(null);
+    this.resetVideo(null);
     this.isFormOpen.set(true);
     this.loadCrmProducts();
   }
@@ -132,6 +154,7 @@ export class ProductsPageComponent implements OnInit {
     };
     this.formError.set('');
     this.selectedCrm.set(null);
+    this.resetVideo(product.videoUrl);
     this.isFormOpen.set(true);
     this.loadCrmProducts();
   }
@@ -187,6 +210,63 @@ export class ProductsPageComponent implements OnInit {
     if (this.isSaving()) return;
     this.isFormOpen.set(false);
     this.editing.set(null);
+    this.resetVideo(null);
+  }
+
+  pickVideo(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!VIDEO_TYPES.includes(file.type)) {
+      this.toast.show('يجب أن يكون الفيديو بصيغة MP4 أو WebM', 'warning');
+      return;
+    }
+    if (file.size > MAX_VIDEO_BYTES) {
+      this.toast.show(`الفيديو «${file.name}» أكبر من 30 ميجابايت`, 'warning');
+      return;
+    }
+    this.releasePreview();
+    this.videoFile.set(file);
+    this.videoPreview.set(URL.createObjectURL(file));
+  }
+
+  removeVideo(): void {
+    this.releasePreview();
+    this.videoFile.set(null);
+    this.videoPreview.set('');
+    this.videoRemoved = true;
+  }
+
+  private resetVideo(savedUrl: string | null): void {
+    this.releasePreview();
+    this.videoFile.set(null);
+    this.videoPreview.set(savedUrl ?? '');
+    this.uploadProgress.set(null);
+    this.videoRemoved = false;
+  }
+
+  private releasePreview(): void {
+    const url = this.videoPreview();
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+  }
+
+  /** Runs after the product itself is saved; completes at once when the video did not change. */
+  private syncVideo(productId: string, hadVideo: boolean): Observable<unknown> {
+    const file = this.videoFile();
+    if (file) {
+      this.uploadProgress.set(0);
+      return this.productsService.uploadVideo(productId, file).pipe(
+        filter(event => {
+          if (event.type === HttpEventType.UploadProgress && event.total) {
+            this.uploadProgress.set(Math.round((event.loaded / event.total) * 100));
+          }
+          return event.type === HttpEventType.Response;
+        })
+      );
+    }
+    if (this.videoRemoved && hadVideo) return this.productsService.removeVideo(productId);
+    return of(null);
   }
 
   addImages(event: Event): void {
@@ -253,12 +333,33 @@ export class ProductsPageComponent implements OnInit {
 
     this.isSaving.set(true);
     request.subscribe({
-      next: () => {
-        this.isSaving.set(false);
-        this.isFormOpen.set(false);
-        this.editing.set(null);
-        this.toast.show(current ? 'تم حفظ تعديلات المنتج' : 'تمت إضافة المنتج', 'success');
-        this.loadProducts();
+      next: (res: any) => {
+        const productId: string | undefined = current?.id ?? res?.data?.id;
+        const done = (videoError?: string) => {
+          this.isSaving.set(false);
+          this.isFormOpen.set(false);
+          this.editing.set(null);
+          this.resetVideo(null);
+          if (videoError) {
+            this.toast.show(videoError, 'error');
+          } else {
+            this.toast.show(current ? 'تم حفظ تعديلات المنتج' : 'تمت إضافة المنتج', 'success');
+          }
+          this.loadProducts();
+        };
+        if (!productId) {
+          done();
+          return;
+        }
+        // The product is already saved here: a failed upload says so, and the admin can add the
+        // video again from «تعديل» without redoing the rest of the form.
+        this.syncVideo(productId, !!current?.videoUrl).subscribe({
+          next: () => {},
+          complete: () => done(),
+          error: (err: any) => done(
+            `تم حفظ المنتج، لكن تعذر ${this.videoFile() ? 'رفع' : 'حذف'} الفيديو: ${err?.error?.message || 'حاول مرة أخرى من «تعديل»'}`
+          )
+        });
       },
       error: (err: any) => {
         this.isSaving.set(false);

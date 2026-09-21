@@ -5,7 +5,7 @@ import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StoreLayoutComponent } from '../../../shared/components/layout/store-layout/store-layout.component';
 import { HomeHeaderComponent } from '../../../shared/components/layout/home-header/home-header.component';
-import { LucideAngularModule, ChevronLeft, ChevronRight, CircleDollarSign, Flame, Heart, Minus, PackageCheck, Plus, Ruler, ShieldCheck, ShoppingCart, Star, Truck, Zap, Edit3, X } from 'lucide-angular';
+import { LucideAngularModule, ChevronLeft, ChevronRight, CircleDollarSign, Flame, Heart, Minus, PackageCheck, Play, Plus, Ruler, ShieldCheck, ShoppingCart, Star, Truck, Zap, Edit3, X } from 'lucide-angular';
 import { CartService } from '../../../core/services/cart/cart.service';
 import { FavoritesService } from '../../../core/services/favorites/favorites.service';
 import { ToastService } from '../../../core/services/toast/toast.service';
@@ -43,6 +43,7 @@ export class ProductDetailPageComponent {
   readonly Heart = Heart;
   readonly Minus = Minus;
   readonly PackageCheck = PackageCheck;
+  readonly Play = Play;
   readonly Plus = Plus;
   readonly Ruler = Ruler;
   readonly ShieldCheck = ShieldCheck;
@@ -81,6 +82,7 @@ export class ProductDetailPageComponent {
         if (!p) return;
         this.product = p;
         const isAr = this.langService.storefrontLang() === 'ar';
+        this.activeImage.set(0);
         this.display = {
           name: isAr ? (p.nameAr || p.nameEn || p.name) : (p.nameEn || p.nameAr || p.name),
           price: p.price,
@@ -92,6 +94,7 @@ export class ProductDetailPageComponent {
           color: 'STOREFRONT.AUTO_STR_472',
           colors: p.colors && p.colors.length ? p.colors : ['#060606', '#f5d4c2'],
           images: p.images && p.images.length ? p.images : ['/assets/home/product-1.png'],
+          videoUrl: p.videoUrl || null,
           discount: p.originalPrice
             ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
             : 0,
@@ -135,12 +138,21 @@ export class ProductDetailPageComponent {
       this.activeImage.set(index);
   }
 
+  /** The video, when there is one, is the gallery's last slide: index images.length. */
+  private get slideCount(): number {
+      return this.display.images.length + (this.display.videoUrl ? 1 : 0);
+  }
+
+  isVideoActive(): boolean {
+      return !!this.display?.videoUrl && this.activeImage() === this.display.images.length;
+  }
+
   previousImage() {
-      this.activeImage.update(current => (current - 1 + this.display.images.length) % this.display.images.length);
+      this.activeImage.update(current => (current - 1 + this.slideCount) % this.slideCount);
   }
 
   nextImage() {
-      this.activeImage.update(current => (current + 1) % this.display.images.length);
+      this.activeImage.update(current => (current + 1) % this.slideCount);
   }
 
   addCurrentProduct() {

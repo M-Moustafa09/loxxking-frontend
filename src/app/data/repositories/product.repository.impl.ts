@@ -83,7 +83,8 @@ export class ProductRepositoryImpl implements IProductRepository {
       isBestSeller: p.isBestSeller ?? false,
       badge: p.badge,
       colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : ['#060606', '#f5d4c2'],
-      aliases: Array.isArray(p.aliases) ? p.aliases : []
+      aliases: Array.isArray(p.aliases) ? p.aliases : [],
+      videoUrl: p.videoUrl || null
     };
   }
 

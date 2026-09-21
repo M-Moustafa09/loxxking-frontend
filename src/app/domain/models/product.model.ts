@@ -30,6 +30,8 @@ export interface Product {
   colors?: string[];
   guid?: string;
   aliases?: string[];
+  /** Optional product video, shown on the product page after the images. */
+  videoUrl?: string | null;
 }
 
 export interface Review {
