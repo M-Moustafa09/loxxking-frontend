@@ -46,8 +46,14 @@ export class HeroComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The editor saves `titleAr`/`titleEn` on each slide; `title` is the older single-language copy. */
   getTitle(slide: any): string {
-    return slide.title || this.config?.title || (this.langService.storefrontLang() === 'ar' ? 'شد أقوى\nوقوام أفضل' : 'Stronger Shaping\nBetter Silhouette');
+    const isAr = this.langService.storefrontLang() === 'ar';
+    const source = slide.title || slide.titleAr || slide.titleEn ? slide : this.config ?? {};
+    const localized = isAr
+      ? (source.titleAr || source.title || source.titleEn)
+      : (source.titleEn || source.title || source.titleAr);
+    return localized || (isAr ? 'شد أقوى\nوقوام أفضل' : 'Stronger Shaping\nBetter Silhouette');
   }
 
   prevSlide() {
