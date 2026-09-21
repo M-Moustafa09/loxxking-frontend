@@ -483,3 +483,95 @@
 .lk-crm-warning {
   color: #b45309;
 }
+
+/* ── Prices: international USD + per country (2026-09-21) ───────────────────────────────── */
+.lk-products-prices {
+  gap: 8px;
+}
+
+.lk-products-prices-title {
+  margin-top: 6px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.lk-products-price-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* A number input with its currency shown inside, on the right (the inputs are LTR). */
+.lk-products-price-input {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.lk-products-field .lk-products-price-input input[type="number"] {
+  padding-inline-end: 48px;
+}
+
+.lk-products-price-input em {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 10px;
+  transform: translateY(-50%);
+  color: #6b7280;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.lk-products-country-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 110px) 1fr 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.lk-products-country-row strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.lk-products-country-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  background: #fff;
+  color: #be123c;
+  cursor: pointer;
+}
+
+.lk-products-country-remove:hover {
+  background: #fff1f2;
+}
+
+.lk-products-price--missing {
+  color: #b45309;
+}
+
+@media (max-width: 560px) {
+  .lk-products-price-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lk-products-country-row {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .lk-products-country-row strong {
+    grid-column: 1 / -1;
+  }
+}

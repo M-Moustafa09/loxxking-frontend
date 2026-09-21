@@ -63,7 +63,7 @@
               <td class="font-semibold text-gray-900">{{ product.nameAr }}</td>
               <td class="text-gray-600" dir="ltr">{{ product.nameEn }}</td>
               <td class="text-gray-600">{{ categoryLabel(product) }}</td>
-              <td class="text-gray-900 font-semibold">{{ product.price }}</td>
+              <td class="font-semibold" [class.text-gray-900]="product.internationalPrice != null" [class.lk-products-price--missing]="product.internationalPrice == null">{{ priceSummary(product) }}</td>
               <td>
                 <span *ngIf="product.productCode" class="lk-products-code" dir="ltr">{{ product.productCode }}</span>
                 <span *ngIf="!product.productCode" class="lk-products-code lk-products-code--missing">
@@ -189,10 +189,48 @@
           <textarea rows="4" [(ngModel)]="form.description" name="description"></textarea>
         </label>
 
-        <label class="lk-products-field">
-          <span>{{ 'ADMIN_PRODUCTS.FIELD_PRICE' | translate }}</span>
-          <input type="number" min="0" step="0.01" [(ngModel)]="form.basePrice" name="basePrice" dir="ltr" />
-        </label>
+        <!-- Prices (owner decisions 2026-09-21): an international USD price, plus a price per
+             country for the countries the admin picks. A country left out shows the USD price. -->
+        <div class="lk-products-field lk-products-prices">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_INTL_PRICE' | translate }}</span>
+          <div class="lk-products-price-row">
+            <label class="lk-products-price-input">
+              <input type="number" min="0" step="0.01" [(ngModel)]="form.basePrice" name="basePrice" dir="ltr" placeholder="0.00" />
+              <em>USD</em>
+            </label>
+            <label class="lk-products-price-input">
+              <input type="number" min="0" step="0.01" [(ngModel)]="form.internationalOriginalPrice" name="intlOriginalPrice" dir="ltr"
+                     [placeholder]="'ADMIN_PRODUCTS.ORIGINAL_PRICE_PLACEHOLDER' | translate" />
+              <em>USD</em>
+            </label>
+          </div>
+
+          <span class="lk-products-prices-title">{{ 'ADMIN_PRODUCTS.COUNTRY_PRICES' | translate }}</span>
+          <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.COUNTRY_PRICES_HINT' | translate }}</small>
+
+          <select class="lk-products-country-picker" name="countryToAdd" [(ngModel)]="countryToAdd" (ngModelChange)="addCountry($event)"
+                  [disabled]="availableCountries().length === 0">
+            <option value="">{{ 'ADMIN_PRODUCTS.ADD_COUNTRY' | translate }}</option>
+            <option *ngFor="let country of availableCountries()" [value]="country.id">{{ country.nameAr }} ({{ country.currency }})</option>
+          </select>
+
+          <div class="lk-products-country-row" *ngFor="let row of form.countryPrices; let i = index">
+            <strong>{{ countryOf(row.countryId)?.nameAr }}</strong>
+            <label class="lk-products-price-input">
+              <input type="number" min="0" step="0.01" [(ngModel)]="row.price" [name]="'countryPrice' + i" dir="ltr" placeholder="0.00" />
+              <em>{{ countryOf(row.countryId)?.currency }}</em>
+            </label>
+            <label class="lk-products-price-input">
+              <input type="number" min="0" step="0.01" [(ngModel)]="row.originalPrice" [name]="'countryOriginal' + i" dir="ltr"
+                     [placeholder]="'ADMIN_PRODUCTS.ORIGINAL_PRICE_PLACEHOLDER' | translate" />
+              <em>{{ countryOf(row.countryId)?.currency }}</em>
+            </label>
+            <button type="button" class="lk-products-country-remove" (click)="removeCountry(row)"
+                    [attr.aria-label]="'ADMIN_PRODUCTS.REMOVE_COUNTRY' | translate">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        </div>
 
         <div class="lk-products-field">
           <span>{{ 'ADMIN_PRODUCTS.FIELD_IMAGES' | translate }}</span>

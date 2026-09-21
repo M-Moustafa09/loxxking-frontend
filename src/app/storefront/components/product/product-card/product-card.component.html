@@ -46,8 +46,9 @@
     </div>
     
     <div class="flex items-center gap-2">
-      <span class="font-display font-bold text-brand">${{product.price}}</span>
-      <span *ngIf="product.originalPrice" class="text-xs text-muted-foreground line-through">${{product.originalPrice}}</span>
+      <!-- The currency is the visitor's (their country's, or USD); it used to be a hard-coded «$». -->
+      <span class="font-display font-bold text-brand">{{product.price}} {{ 'COMMON.CURRENCY' | translate }}</span>
+      <span *ngIf="product.originalPrice && product.originalPrice > product.price" class="text-xs text-muted-foreground line-through">{{product.originalPrice}} {{ 'COMMON.CURRENCY' | translate }}</span>
       <app-badge *ngIf="discount > 0" variant="danger" size="sm">{{discount}}% {{tDiscount}}</app-badge>
     </div>
   </div>

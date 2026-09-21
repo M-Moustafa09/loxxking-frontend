@@ -11,8 +11,10 @@ import { ToastService } from '../../../core/services/toast/toast.service';
 import {
   AdminProduct,
   AdminProductsService,
+  CountryPrice,
   CrmProduct,
-  ProductFormValue
+  ProductFormValue,
+  StoreCountry
 } from '../../../core/services/products/admin-products.service';
 
 /** An image bigger than this bloats the JSON body, since images travel inline as data URLs. */
@@ -44,6 +46,10 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
 
   readonly products = this.productsService.products;
   readonly categories = this.productsService.categories;
+  readonly countries = this.productsService.countries;
+
+  /** Bound to the «اختر دولة» picker; reset after each pick. */
+  countryToAdd = '';
 
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
@@ -108,6 +114,9 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
     this.productsService.fetchCategories().subscribe({
       error: () => this.toast.show('تعذر تحميل الأقسام', 'error')
     });
+    this.productsService.fetchCountries().subscribe({
+      error: () => this.toast.show('تعذر تحميل الدول', 'error')
+    });
   }
 
   loadProducts(): void {
@@ -149,7 +158,11 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
       nameEn: product.nameEn,
       description: product.description,
       images: [...product.images],
-      basePrice: product.price,
+      // Products made before per-country pricing have no international price yet: the field
+      // starts empty so the admin fills it, instead of inheriting the old price (which was EGP).
+      basePrice: product.internationalPrice,
+      internationalOriginalPrice: product.internationalOriginalPrice,
+      countryPrices: product.countryPrices.map(cp => ({ ...cp })),
       productCode: product.productCode
     };
     this.formError.set('');
@@ -368,6 +381,39 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Per-country prices ────────────────────────────────────────────────────────────────
+
+  /** Countries not priced yet in this form — what the picker still offers. */
+  availableCountries(): StoreCountry[] {
+    const used = new Set(this.form.countryPrices.map(cp => cp.countryId));
+    return this.countries().filter(c => !used.has(c.id));
+  }
+
+  countryOf(countryId: string): StoreCountry | undefined {
+    return this.countries().find(c => c.id === countryId);
+  }
+
+  addCountry(countryId: string): void {
+    if (countryId && !this.form.countryPrices.some(cp => cp.countryId === countryId)) {
+      this.form.countryPrices = [...this.form.countryPrices, { countryId, price: null, originalPrice: null }];
+    }
+    // Reset the picker after Angular has applied the pick, so the same country can be offered again later.
+    setTimeout(() => (this.countryToAdd = ''));
+  }
+
+  removeCountry(row: CountryPrice): void {
+    this.form.countryPrices = this.form.countryPrices.filter(cp => cp !== row);
+  }
+
+  /** The list column: the international price, and how many countries have their own. */
+  priceSummary(product: AdminProduct): string {
+    const intl = product.internationalPrice != null ? `${product.internationalPrice}` : 'بدون سعر دولي';
+    const count = product.countryPrices.length;
+    if (!count) return intl;
+    const countries = count === 1 ? 'دولة واحدة' : count === 2 ? 'دولتان' : `${count} دول`;
+    return `${intl} · ${countries}`;
+  }
+
   askDelete(product: AdminProduct): void {
     this.deleting.set(product);
   }
@@ -398,8 +444,19 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
     if (!this.form.nameAr.trim()) return 'الاسم بالعربية مطلوب';
     if (!this.form.nameEn.trim()) return 'الاسم بالإنجليزية مطلوب';
     if (!this.form.description.trim()) return 'الوصف مطلوب';
-    if (this.form.basePrice === null || this.form.basePrice === undefined || this.form.basePrice < 0) {
-      return 'أدخل سعراً صحيحاً';
+    const intl = Number(this.form.basePrice);
+    if (!this.form.basePrice || !(intl > 0)) return 'أدخل السعر الدولي بالدولار';
+    const intlOriginal = Number(this.form.internationalOriginalPrice);
+    if (this.form.internationalOriginalPrice && !(intlOriginal > intl)) {
+      return 'السعر الدولي قبل الخصم يجب أن يكون أكبر من السعر';
+    }
+    for (const row of this.form.countryPrices) {
+      const name = this.countryOf(row.countryId)?.nameAr ?? 'الدولة';
+      const price = Number(row.price);
+      if (!row.price || !(price > 0)) return `أدخل سعر ${name} أو احذفها من القائمة`;
+      if (row.originalPrice && !(Number(row.originalPrice) > price)) {
+        return `سعر ${name} قبل الخصم يجب أن يكون أكبر من السعر`;
+      }
     }
     return '';
   }
@@ -411,7 +468,9 @@ export class ProductsPageComponent implements OnInit, OnDestroy {
       nameEn: '',
       description: '',
       images: [],
-      basePrice: 0,
+      basePrice: null,
+      internationalOriginalPrice: null,
+      countryPrices: [],
       productCode: null
     };
   }
