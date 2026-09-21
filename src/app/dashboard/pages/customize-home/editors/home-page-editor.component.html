@@ -195,21 +195,11 @@
           <a routerLink="/admin/categories" class="flex-shrink-0 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-md font-bold hover:bg-blue-100">إدارة الأقسام</a>
         </div>
 
-        <ng-container *ngIf="section.type === 'bestsellers'">
-          <div class="mb-2 mt-4">
-            <div class="text-xs font-bold text-gray-700 mb-2">
-              العناصر المعروضة ({{ section.products?.length || 0 }})
-            </div>
-            <div class="flex gap-2 overflow-x-auto pb-2">
-              <div *ngFor="let p of section.products; trackBy: trackByItemId" class="w-14 h-14 bg-gray-100 rounded-md border border-gray-200 overflow-hidden flex-shrink-0 p-1" [title]="p.name">
-                <img [src]="p.image" [alt]="p.name" class="w-full h-full object-contain mix-blend-multiply" />
-              </div>
-            </div>
-          </div>
-          <button (click)="openContentEditor(section)" class="w-full flex items-center justify-center gap-2 py-2 border border-blue-200 text-blue-600 bg-white rounded-lg text-sm hover:bg-blue-50 transition-colors mt-2 font-medium">
-            <lucide-icon name="edit-2" [size]="16"></lucide-icon><span>تعديل محتوى القسم (إدارة العناصر)</span>
-          </button>
-        </ng-container>
+        <!-- The bestsellers section shows every store product, newest first; nothing is picked here. -->
+        <div *ngIf="section.type === 'bestsellers'" class="mt-4 px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 font-medium flex items-center justify-between gap-3">
+          <span>هذا القسم يعرض كل منتجات المتجر تلقائياً، والأحدث أولاً. لإضافة منتج أو تعديله استخدم «المنتجات».</span>
+          <a routerLink="/admin/products" class="flex-shrink-0 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-md font-bold hover:bg-blue-100">المنتجات</a>
+        </div>
       </app-section-card>
       
     </ng-container>
