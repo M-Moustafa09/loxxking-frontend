@@ -1,3 +1,4 @@
+@if (displayCategories.length > 0) {
 <section class="lk-home-section lk-category-section" aria-labelledby="categories-heading">
   @if (title) {
     <div id="categories-heading" class="flex justify-between items-center mb-6">
@@ -26,8 +27,9 @@
             decoding="async"
           />
         </span>
-        <strong>{{ getCategoryLabel(category) | translate }}</strong>
+        <strong>{{ getCategoryLabel(category) }}</strong>
       </a>
     }
   </div>
 </section>
+}

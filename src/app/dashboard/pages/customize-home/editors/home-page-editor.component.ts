@@ -1,6 +1,7 @@
 import { TranslatePipe, TranslateDirective } from '@ngx-translate/core';
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
 import { Subject, Subscription } from 'rxjs';
@@ -16,7 +17,7 @@ type SectionType = 'hero' | 'benefits' | 'categories' | 'bestsellers' | 'promo';
 @Component({
   selector: 'app-home-page-editor',
   standalone: true,
-  imports: [TranslatePipe, TranslateDirective, CommonModule, FormsModule, LucideAngularModule, SectionCardComponent],
+  imports: [TranslatePipe, TranslateDirective, CommonModule, FormsModule, LucideAngularModule, SectionCardComponent, RouterLink],
   templateUrl: './home-page-editor.component.html'
 })
 export class HomePageEditorComponent implements OnInit, OnDestroy {
