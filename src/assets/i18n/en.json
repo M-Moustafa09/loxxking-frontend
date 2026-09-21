@@ -1744,7 +1744,16 @@
     "SAVE": "Save",
     "SAVING": "Saving...",
     "DELETE_TITLE": "Delete product",
-    "DELETE_CONFIRM": "Are you sure you want to delete"
+    "DELETE_CONFIRM": "Are you sure you want to delete",
+    "FIELD_CRM_PRODUCT": "Luxira product",
+    "CHOOSE_CRM_PRODUCT": "Choose the product",
+    "CRM_LOADING": "Loading Luxira products...",
+    "CRM_RETRY": "Retry",
+    "CRM_SEARCH": "Search by name or code...",
+    "CRM_EMPTY": "No matching products.",
+    "CRM_HINT": "The code comes from the chosen product and cannot be edited. Products already linked to another store product are not listed.",
+    "CRM_UNMATCHED": "The current code is not in Luxira, choose the right product:",
+    "IMAGES_PASTE_HINT": "You can also copy an image and paste it here (Ctrl+V)."
   },
   "ADMIN_SETTINGS_MENU": {
     "TITLE": "Settings",

@@ -123,6 +123,55 @@
           <small *ngIf="editing()" class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CATEGORY_LOCKED' | translate }}</small>
         </label>
 
+        <!-- The CRM product this store product is. Its code comes with it and cannot be typed. -->
+        <div class="lk-products-field">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_CRM_PRODUCT' | translate }}</span>
+
+          <p *ngIf="crmLoading()" class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CRM_LOADING' | translate }}</p>
+
+          <div *ngIf="!crmLoading() && crmError()" class="lk-crm-error">
+            <span>{{ crmError() }}</span>
+            <button type="button" (click)="loadCrmProducts()">{{ 'ADMIN_PRODUCTS.CRM_RETRY' | translate }}</button>
+          </div>
+
+          <ng-container *ngIf="!crmLoading() && !crmError()">
+            <button type="button" class="lk-crm-trigger" (click)="togglePicker()" [attr.aria-expanded]="isPickerOpen()">
+              <span *ngIf="selectedCrm() as picked" class="lk-crm-selected">
+                <strong>{{ picked.name }}</strong>
+                <span class="lk-products-code" dir="ltr">{{ picked.productCode }}</span>
+              </span>
+              <span *ngIf="!selectedCrm()" class="lk-crm-placeholder">{{ 'ADMIN_PRODUCTS.CHOOSE_CRM_PRODUCT' | translate }}</span>
+              <lucide-icon [img]="ChevronDownIcon" [size]="16"></lucide-icon>
+            </button>
+
+            <small *ngIf="editing() && !selectedCrm() && form.productCode" class="lk-products-hint lk-crm-warning">
+              {{ 'ADMIN_PRODUCTS.CRM_UNMATCHED' | translate }} «{{ form.productCode }}»
+            </small>
+
+            <div *ngIf="isPickerOpen()" class="lk-crm-panel">
+              <label class="lk-crm-search">
+                <lucide-icon [img]="SearchIcon" [size]="15"></lucide-icon>
+                <input type="search" [value]="crmSearch()" (input)="updateCrmSearch($event)"
+                       [placeholder]="'ADMIN_PRODUCTS.CRM_SEARCH' | translate" autocomplete="off" />
+              </label>
+              <ul class="lk-crm-list" role="listbox">
+                <li *ngFor="let item of pickableCrm()">
+                  <button type="button" role="option" (click)="pickCrm(item)"
+                          [class.is-selected]="selectedCrm()?.productCode === item.productCode">
+                    <span class="lk-crm-item-name">
+                      {{ item.name }}
+                      <small *ngIf="item.group">{{ item.group }}</small>
+                    </span>
+                    <span class="lk-products-code" dir="ltr">{{ item.productCode }}</span>
+                  </button>
+                </li>
+                <li *ngIf="pickableCrm().length === 0" class="lk-crm-empty">{{ 'ADMIN_PRODUCTS.CRM_EMPTY' | translate }}</li>
+              </ul>
+            </div>
+          </ng-container>
+          <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CRM_HINT' | translate }}</small>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label class="lk-products-field">
             <span>{{ 'ADMIN_PRODUCTS.FIELD_NAME_AR' | translate }}</span>
@@ -140,18 +189,10 @@
           <textarea rows="4" [(ngModel)]="form.description" name="description"></textarea>
         </label>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label class="lk-products-field">
-            <span>{{ 'ADMIN_PRODUCTS.FIELD_PRICE' | translate }}</span>
-            <input type="number" min="0" step="0.01" [(ngModel)]="form.basePrice" name="basePrice" dir="ltr" />
-          </label>
-
-          <label class="lk-products-field">
-            <span>{{ 'ADMIN_PRODUCTS.FIELD_CODE' | translate }}</span>
-            <input type="text" [(ngModel)]="form.productCode" name="productCode" dir="ltr" placeholder="L39" />
-            <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.CODE_HINT' | translate }}</small>
-          </label>
-        </div>
+        <label class="lk-products-field">
+          <span>{{ 'ADMIN_PRODUCTS.FIELD_PRICE' | translate }}</span>
+          <input type="number" min="0" step="0.01" [(ngModel)]="form.basePrice" name="basePrice" dir="ltr" />
+        </label>
 
         <div class="lk-products-field">
           <span>{{ 'ADMIN_PRODUCTS.FIELD_IMAGES' | translate }}</span>
@@ -168,7 +209,7 @@
               <input type="file" accept="image/png,image/jpeg,image/webp" multiple (change)="addImages($event)" />
             </label>
           </div>
-          <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.IMAGES_HINT' | translate }}</small>
+          <small class="lk-products-hint">{{ 'ADMIN_PRODUCTS.IMAGES_HINT' | translate }} {{ 'ADMIN_PRODUCTS.IMAGES_PASTE_HINT' | translate }}</small>
         </div>
 
         <p class="lk-products-error" *ngIf="formError()">{{ formError() }}</p>

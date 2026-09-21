@@ -19,7 +19,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Do not show errors for background silent checks
-      if (req.url.includes('/users/me') || req.url.includes('/home-page-config') || req.url.includes('/sso/session-token')) {
+      if (req.url.includes('/users/me') || req.url.includes('/home-page-config') || req.url.includes('/sso/session-token') ||
+          // The product form shows its own message and a retry button when the CRM list fails.
+          req.url.includes('/crm-products')) {
         return throwError(() => error);
       }
 

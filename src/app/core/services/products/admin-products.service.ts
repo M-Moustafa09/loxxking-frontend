@@ -38,6 +38,18 @@ export interface AdminCategory {
   productCount: number;
 }
 
+/**
+ * A product from the CRM (Luxira's SubWarehouse list) with its code. The store product picks one of
+ * these instead of typing the code; `linkedProductId` is the live store product already using it.
+ */
+export interface CrmProduct {
+  id: number;
+  name: string;
+  productCode: string;
+  group: string | null;
+  linkedProductId: string | null;
+}
+
 /** What the category form owns. `image` is a URL, a new data URL, or '' for none. */
 export interface CategoryFormValue {
   nameAr: string;
@@ -91,6 +103,19 @@ export class AdminProductsService {
         productCount: Number(row.productCount ?? 0)
       }))),
       tap(categories => this.categoriesSignal.set(categories))
+    );
+  }
+
+  /** Errors when the CRM cannot be reached: an empty picker would read as "the CRM has no products". */
+  fetchCrmProducts(): Observable<CrmProduct[]> {
+    return this.http.get<ApiEnvelope<any[]>>(`${environment.apiBaseUrl}/crm-products`).pipe(
+      map(res => (res?.data ?? []).map(row => ({
+        id: Number(row.id),
+        name: row.name ?? '',
+        productCode: row.productCode ?? '',
+        group: row.group ?? null,
+        linkedProductId: row.linkedProductId ?? null
+      })))
     );
   }
 
