@@ -72,25 +72,49 @@
             </label>
 
             <div class="lk-checkout-field-grid">
-              <label class="lk-checkout-field">
-                <span>{{ 'CHECKOUT.CITY' | translate }}<b class="lk-checkout-required">*</b></span>
+              <div class="lk-checkout-field lk-checkout-city">
+                <label for="lk-checkout-city-input">{{ 'CHECKOUT.CITY' | translate }}<b class="lk-checkout-required">*</b></label>
                 <div class="lk-checkout-field__input">
                   <lucide-icon name="map-pin" aria-hidden="true"></lucide-icon>
                   <input
+                    id="lk-checkout-city-input"
                     type="text"
-                    [(ngModel)]="city"
+                    [ngModel]="city()"
+                    (ngModelChange)="onCityTyped($event)"
                     name="city"
-                    list="lk-checkout-city-suggestions"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="lk-checkout-city-list"
+                    [attr.aria-expanded]="showCityList()"
+                    [attr.aria-activedescendant]="activeCityIndex() >= 0 ? 'lk-checkout-city-' + activeCityIndex() : null"
                     [placeholder]="'CHECKOUT.CITY_PLACEHOLDER' | translate"
                     required
                     maxlength="100"
-                    autocomplete="address-level2"
+                    autocomplete="off"
+                    (focus)="cityListOpen.set(true)"
+                    (blur)="cityListOpen.set(false)"
+                    (keydown)="onCityKeydown($event)"
                   />
-                  <datalist id="lk-checkout-city-suggestions">
-                    <option *ngFor="let suggestion of citySuggestions()" [value]="suggestion"></option>
-                  </datalist>
                 </div>
-              </label>
+                <ul
+                  *ngIf="showCityList()"
+                  id="lk-checkout-city-list"
+                  class="lk-checkout-city__list"
+                  role="listbox"
+                >
+                  <li
+                    *ngFor="let suggestion of filteredCities(); let i = index"
+                    [id]="'lk-checkout-city-' + i"
+                    class="lk-checkout-city__option"
+                    [class.is-active]="i === activeCityIndex()"
+                    role="option"
+                    [attr.aria-selected]="i === activeCityIndex()"
+                    (mousedown)="$event.preventDefault(); pickCity(suggestion)"
+                  >
+                    {{ suggestion }}
+                  </li>
+                </ul>
+              </div>
 
               <label class="lk-checkout-field">
                 <span>{{ 'DASHBOARD.AUTO_STR_393' | translate }}</span>

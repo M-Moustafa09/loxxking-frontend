@@ -59,6 +59,17 @@ const BANK_RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 const WALLET_PAYMENT_SESSION_KEY = 'lk-wallet-payment-session';
 const ORDER_COUNTRY = 'SHARED.AUTO_STR_79';
 
+/** Folds the spellings people mix up (أ/إ/آ, ة/ه, ى/ي) so «الاسكندريه» still finds «الإسكندرية». */
+function foldArabic(value: string): string {
+  return (value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ');
+}
+
 
 function createTrackedOrderId() {
   return 'lxk_' + Math.random().toString(36).substring(2, 11);
@@ -107,6 +118,63 @@ export class CheckoutPageComponent implements OnInit {
       });
     onCleanup(() => sub.unsubscribe());
   }, { allowSignalWrites: true }); // Angular 18 refuses the reset above without it
+
+  /**
+   * Our own suggestion list, not a <datalist>: the browser draws a datalist itself, so it cannot be
+   * styled and lands in a different place on each phone (detached from the field in some, above the
+   * keyboard on iOS).
+   */
+  cityListOpen = signal(false);
+  activeCityIndex = signal(-1);
+  filteredCities = computed(() => {
+    const all = this.citySuggestions();
+    const typed = foldArabic(this.city());
+    if (!typed) return all;
+    const starts: string[] = [];
+    const contains: string[] = [];
+    for (const city of all) {
+      const folded = foldArabic(city);
+      // «جيزة» should find «الجيزة»: the article is not what people type first.
+      if (folded.startsWith(typed) || folded.replace(/^ال/, '').startsWith(typed)) starts.push(city);
+      else if (folded.includes(typed)) contains.push(city);
+    }
+    return [...starts, ...contains];
+  });
+  showCityList = computed(() => {
+    const list = this.filteredCities();
+    // Nothing to offer, or the customer already has exactly the one suggestion: stay out of the way.
+    return this.cityListOpen() && list.length > 0
+      && !(list.length === 1 && foldArabic(list[0]) === foldArabic(this.city()));
+  });
+
+  onCityTyped(value: string) {
+    this.city.set(value);
+    this.cityListOpen.set(true);
+    this.activeCityIndex.set(-1);
+  }
+
+  pickCity(city: string) {
+    this.city.set(city);
+    this.cityListOpen.set(false);
+    this.activeCityIndex.set(-1);
+  }
+
+  onCityKeydown(event: KeyboardEvent) {
+    const list = this.filteredCities();
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (!list.length) return;
+      event.preventDefault();
+      this.cityListOpen.set(true);
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      this.activeCityIndex.set((this.activeCityIndex() + step + list.length) % list.length);
+      document.getElementById(`lk-checkout-city-${this.activeCityIndex()}`)?.scrollIntoView({ block: 'nearest' });
+    } else if (event.key === 'Enter' && this.showCityList() && this.activeCityIndex() >= 0) {
+      event.preventDefault(); // pick the city, don't submit the order
+      this.pickCity(list[this.activeCityIndex()]);
+    } else if (event.key === 'Escape') {
+      this.cityListOpen.set(false);
+    }
+  }
 
   BANK_TRANSFER_DETAILS = BANK_TRANSFER_DETAILS;
 
