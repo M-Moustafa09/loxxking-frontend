@@ -14,6 +14,8 @@ interface VisitorPrice {
   originalPrice?: number;
 }
 
+const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 const ID_ALIAS_MAP: Record<string, string> = {
   'home-product-1': 'prod-2',
   'home-product-2': 'prod-3',
@@ -232,6 +234,11 @@ export class ProductRepositoryImpl implements IProductRepository {
   getProductById(id: string): Observable<Product | undefined> {
     if (!this.useMocks) {
       const guid = this.getRealProductId(id) || id;
+      // The API only answers /products/{id} for a GUID. A slug link (/product/<name>) used to be
+      // asked here first: the server answered with index.html, the JSON parse failed and every such
+      // visit showed the red «unexpected server error» toast before the slug lookup found the
+      // product. Not a GUID → "not found by id", and the page goes straight to the slug.
+      if (!GUID_PATTERN.test(guid)) return of(undefined);
       return this.http.get<any>(`${environment.apiBaseUrl}/products/${guid}`).pipe(
         map(res => {
           const p = res?.data ?? res;
@@ -325,7 +332,7 @@ export class ProductRepositoryImpl implements IProductRepository {
     if (!mockId) return this.useMocks ? GUID_MAP['prod-1'] : '';
 
     // If it's already a standard GUID format
-    if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(mockId)) {
+    if (GUID_PATTERN.test(mockId)) {
       return mockId;
     }
 
