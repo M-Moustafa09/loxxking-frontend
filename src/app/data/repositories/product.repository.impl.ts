@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { IProductRepository } from '../../domain/interfaces/product.repository';
@@ -7,6 +7,7 @@ import { Product, Category, Review } from '../../domain/models/product.model';
 import { products, categories, reviews } from '../../shared/data/mockData';
 import { environment } from '../../../environments/environment';
 import { ContextService } from '../../core/services/context/context.service';
+import { SILENT_REQUEST } from '../../core/interceptors/error.interceptor';
 
 /** A price the visitor can actually be charged, in the currency the store shows them. */
 interface VisitorPrice {
@@ -15,6 +16,10 @@ interface VisitorPrice {
 }
 
 const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function silentOptions(silent: boolean) {
+  return silent ? { context: new HttpContext().set(SILENT_REQUEST, true) } : {};
+}
 
 const ID_ALIAS_MAP: Record<string, string> = {
   'home-product-1': 'prod-2',
@@ -214,14 +219,21 @@ export class ProductRepositoryImpl implements IProductRepository {
     console.error(`[storefront] ${what} could not be loaded from the API.`, error);
   }
 
-  getProducts(): Observable<Product[]> {
+  /**
+   * `silent`: the page is reloading itself after a live catalogue change (CatalogLiveService). The
+   * request shows no toast, and a failure is passed on instead of becoming an empty list — the page
+   * then keeps what it shows rather than emptying on a network blip.
+   */
+  getProducts(silent = false): Observable<Product[]> {
     if (!this.useMocks) {
-      return this.http.get<any>(`${environment.apiBaseUrl}/products`).pipe(
+      const request = this.http.get<any>(`${environment.apiBaseUrl}/products`, silentOptions(silent)).pipe(
         map(res => {
           const items = res?.data ?? res ?? [];
           if (!Array.isArray(items)) return [];
           return items.map(p => this.mapOfferedProduct(p)).filter((p): p is Product => p !== null);
-        }),
+        })
+      );
+      return silent ? request : request.pipe(
         catchError(error => {
           this.reportFailure('The product list', error);
           return of([] as Product[]);
@@ -231,7 +243,8 @@ export class ProductRepositoryImpl implements IProductRepository {
     return of(products);
   }
 
-  getProductById(id: string): Observable<Product | undefined> {
+  /** `silent`: as for getProducts — a 404 (the product was removed) reaches the caller as an error. */
+  getProductById(id: string, silent = false): Observable<Product | undefined> {
     if (!this.useMocks) {
       const guid = this.getRealProductId(id) || id;
       // The API only answers /products/{id} for a GUID. A slug link (/product/<name>) used to be
@@ -239,12 +252,14 @@ export class ProductRepositoryImpl implements IProductRepository {
       // visit showed the red «unexpected server error» toast before the slug lookup found the
       // product. Not a GUID → "not found by id", and the page goes straight to the slug.
       if (!GUID_PATTERN.test(guid)) return of(undefined);
-      return this.http.get<any>(`${environment.apiBaseUrl}/products/${guid}`).pipe(
+      const request = this.http.get<any>(`${environment.apiBaseUrl}/products/${guid}`, silentOptions(silent)).pipe(
         map(res => {
           const p = res?.data ?? res;
           // Not sold in the visitor's country: the page shows its «not found» state.
           return p ? this.mapOfferedProduct(p) ?? undefined : undefined;
-        }),
+        })
+      );
+      return silent ? request : request.pipe(
         catchError(error => {
           this.reportFailure(`Product ${id}`, error);
           return of(undefined);
@@ -254,14 +269,16 @@ export class ProductRepositoryImpl implements IProductRepository {
     return of(this.findLocalProduct(id));
   }
 
-  getProductBySlug(slug: string): Observable<Product | undefined> {
+  getProductBySlug(slug: string, silent = false): Observable<Product | undefined> {
     if (!this.useMocks) {
-      return this.http.get<any>(`${environment.apiBaseUrl}/products/slug/${slug}`).pipe(
+      const request = this.http.get<any>(`${environment.apiBaseUrl}/products/slug/${slug}`, silentOptions(silent)).pipe(
         map(res => {
           const p = res?.data ?? res;
           // Not sold in the visitor's country: the page shows its «not found» state.
           return p ? this.mapOfferedProduct(p) ?? undefined : undefined;
-        }),
+        })
+      );
+      return silent ? request : request.pipe(
         catchError(error => {
           this.reportFailure(`Product ${slug}`, error);
           return of(undefined);

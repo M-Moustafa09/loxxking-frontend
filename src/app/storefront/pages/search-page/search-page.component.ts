@@ -6,6 +6,8 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { LucideAngularModule, Check, ChevronLeft, Headphones, Heart, MessageCircle, Search, ShoppingCart, Trash2, X } from 'lucide-angular';
 import { StoreLayoutComponent } from '../../../shared/components/layout/store-layout/store-layout.component';
 import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { sanitizeWithInitial } from '../../../core/utils/config-sanitizer';
 import { CartService } from '../../../core/services/cart/cart.service';
 import { FavoritesService } from '../../../core/services/favorites/favorites.service';
@@ -83,6 +85,23 @@ export class SearchPageComponent implements OnInit, OnDestroy {
   allProducts = signal<any[]>([]);
 
   constructor() {
+    // The admin added, edited or re-priced a product: redo the shopper's search on the new
+    // catalogue, quietly — runSearch would play the feedback sound and add to the history again.
+    inject(CatalogLiveService).reload(() => this.productRepo.getProducts(true))
+      .pipe(takeUntilDestroyed())
+      .subscribe(prods => {
+        if (!prods || prods.length === 0) return;
+        this.allProducts.set(prods);
+        const q = this.submittedQuery();
+        const exactMatches = q ? this.findExactProductMatches(q) : [];
+        if (exactMatches.length > 0) {
+          this.mode.set('success');
+          this.visibleProducts.set(exactMatches);
+        } else {
+          if (q) this.mode.set('suggestions');
+          this.visibleProducts.set(this.findSimilarProductSuggestions(q));
+        }
+      });
   }
 
   ngOnInit() {

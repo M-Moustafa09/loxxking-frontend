@@ -11,6 +11,9 @@ import { FavoritesService } from '../../../core/services/favorites/favorites.ser
 import { ToastService } from '../../../core/services/toast/toast.service';
 import { products, Product } from '../../../shared/data/mockData';
 import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EMPTY, Observable, catchError, filter, map, of, switchMap } from 'rxjs';
 import { ProductFeatureIconComponent } from '../../../shared/components/ui/feature-icon/product-feature-icon.component';
 import { LangService } from '../../../core/services/lang/lang.service';
 import { ProductReviewsComponent } from '../../components/product/product-reviews/product-reviews.component';
@@ -73,33 +76,14 @@ export class ProductDetailPageComponent {
       { value: 1, count: 3, width: 2 },
   ];
 
+  /** The id or slug in the address, as the page was opened with it. */
+  private routeId = '';
+
   constructor() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (!id) return;
-
-      const setProductData = (p: any) => {
-        if (!p) return;
-        this.product = p;
-        const isAr = this.langService.storefrontLang() === 'ar';
-        this.activeImage.set(0);
-        this.display = {
-          name: isAr ? (p.nameAr || p.nameEn || p.name) : (p.nameEn || p.nameAr || p.name),
-          price: p.price,
-          oldPrice: p.originalPrice || p.price,
-          rating: p.rating ?? 5,
-          reviewCount: p.reviewCount ?? 0,
-          categoryLabel: p.category || 'CATEGORIES.SHAPERS',
-          description: isAr ? (p.descAr || p.descEn || p.description) : (p.descEn || p.descAr || p.description),
-          color: 'STOREFRONT.AUTO_STR_472',
-          colors: p.colors && p.colors.length ? p.colors : ['#060606', '#f5d4c2'],
-          images: p.images && p.images.length ? p.images : ['/assets/home/product-1.png'],
-          videoUrl: p.videoUrl || null,
-          discount: p.originalPrice
-            ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
-            : 0,
-        };
-      };
+      this.routeId = id;
 
       // A product that cannot be loaded leaves `product` undefined, which renders this page's own
       // "not available" block. It used to fall back to a local mock instead — and when nothing
@@ -108,16 +92,66 @@ export class ProductDetailPageComponent {
       this.productRepo.getProductById(id).subscribe({
         next: (prod) => {
           if (prod) {
-            setProductData(prod);
+            this.showProduct(prod);
           } else {
             this.productRepo.getProductBySlug(id).subscribe(p => {
-              if (p) setProductData(p);
+              if (p) this.showProduct(p);
             });
           }
         },
         error: () => {}
       });
     });
+
+    // The admin changed this product (price, offer, images, stock) or removed it: show that now.
+    // The shopper keeps the picture, size and quantity they chose; a failed reload keeps the page.
+    inject(CatalogLiveService).changesFor(() => this.product?.id).pipe(
+      filter(() => !!this.routeId),
+      switchMap(() => this.reloadProduct(this.routeId)),
+      takeUntilDestroyed()
+    ).subscribe(p => {
+      if (p) {
+        this.showProduct(p, true);
+      } else {
+        this.product = undefined;
+        this.display = undefined;
+      }
+    });
+  }
+
+  /** The product again, null when it is gone (removed, or no longer sold in this country), nothing on a failure. */
+  private reloadProduct(id: string): Observable<Product | null> {
+    return this.productRepo.getProductById(id, true).pipe(
+      switchMap(p => p ? of(p) : this.productRepo.getProductBySlug(id, true)),
+      map(p => (p as Product | undefined) ?? null),
+      catchError(error => error?.status === 404 ? of(null) : EMPTY)
+    );
+  }
+
+  private showProduct(p: any, keepGallery = false) {
+    if (!p) return;
+    this.product = p;
+    const isAr = this.langService.storefrontLang() === 'ar';
+    this.display = {
+      name: isAr ? (p.nameAr || p.nameEn || p.name) : (p.nameEn || p.nameAr || p.name),
+      price: p.price,
+      oldPrice: p.originalPrice || p.price,
+      rating: p.rating ?? 5,
+      reviewCount: p.reviewCount ?? 0,
+      categoryLabel: p.category || 'CATEGORIES.SHAPERS',
+      description: isAr ? (p.descAr || p.descEn || p.description) : (p.descEn || p.descAr || p.description),
+      color: 'STOREFRONT.AUTO_STR_472',
+      colors: p.colors && p.colors.length ? p.colors : ['#060606', '#f5d4c2'],
+      images: p.images && p.images.length ? p.images : ['/assets/home/product-1.png'],
+      videoUrl: p.videoUrl || null,
+      discount: p.originalPrice
+        ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
+        : 0,
+    };
+    // A live update keeps the slide the shopper is on, unless that picture was removed.
+    if (!keepGallery || this.activeImage() >= this.slideCount) {
+      this.activeImage.set(0);
+    }
   }
 
   get cartProduct() {

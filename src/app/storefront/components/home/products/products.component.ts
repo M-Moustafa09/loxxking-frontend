@@ -9,6 +9,8 @@ import { products as mockProducts } from '../../../../shared/data/mockData';
 import { LangService } from '../../../../core/services/lang/lang.service';
 import { CartService } from '../../../../core/services/cart/cart.service';
 import { ToastService } from '../../../../core/services/toast/toast.service';
+import { CatalogLiveService } from '../../../../core/services/catalog-live/catalog-live.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { LocalizeFieldPipe } from '../../../../shared/pipes/localize-field.pipe';
 
@@ -28,6 +30,7 @@ export class ProductsComponent {
   readonly langService = inject(LangService);
   private cartService = inject(CartService);
   private toastService = inject(ToastService);
+  private catalogLive = inject(CatalogLiveService);
 
   liveProducts = signal<any[]>([]);
   /** False until the catalogue has answered, so nothing is judged missing before we have looked. */
@@ -41,6 +44,11 @@ export class ProductsComponent {
       },
       error: () => this.catalogueLoaded.set(true)
     });
+
+    // The admin added, edited or re-priced a product: show it without a refresh.
+    this.catalogLive.reload(() => this.productRepo.getProducts(true))
+      .pipe(takeUntilDestroyed())
+      .subscribe(prods => this.liveProducts.set(prods || []));
   }
 
   get title() {
