@@ -33,6 +33,7 @@ export class ChatService {
   private baseUrl = environment.apiBaseUrl;
   
   private hubConnection?: signalR.HubConnection;
+  private joinedConversationId = '';
   private messageReceivedSource = new Subject<ChatMessage>();
   messageReceived$ = this.messageReceivedSource.asObservable();
 
@@ -78,6 +79,9 @@ export class ChatService {
   }
 
   startConnection(conversationId: string) {
+    if (conversationId) {
+      this.joinedConversationId = conversationId;
+    }
     if (this.hubConnection?.state === signalR.HubConnectionState.Connected) {
       if (conversationId) {
         this.hubConnection.invoke('JoinConversation', conversationId).catch((err: any) => console.error(err));
@@ -86,9 +90,12 @@ export class ChatService {
     }
 
     const token = this.authService.getToken();
-    
+
     const hubPath = (environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : '') || '';
-    const hubUrl = hubPath ? `${hubPath}/chatHub` : '/chatHub';
+    // The hub only lets a guest join their own conversation, and proves it with the id the chat
+    // endpoints get as X-Guest-Id (auth-token interceptor) — a WebSocket cannot send that header.
+    const guestId = typeof window !== 'undefined' ? window.localStorage?.getItem('lk-guest-id') : null;
+    const hubUrl = `${hubPath}/chatHub` + (guestId ? `?guestId=${encodeURIComponent(guestId)}` : '');
 
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
@@ -96,6 +103,14 @@ export class ChatService {
       })
       .withAutomaticReconnect()
       .build();
+
+    // A reconnect is a new connection with no groups: without joining again the customer
+    // stopped receiving staff replies after any network blip until the page was reloaded.
+    this.hubConnection.onreconnected(() => {
+      if (this.joinedConversationId) {
+        this.hubConnection?.invoke('JoinConversation', this.joinedConversationId).catch((err: any) => console.error(err));
+      }
+    });
 
     this.hubConnection.on('ReceiveMessage', (message: any) => {
       const isStaff = message.isStaff === true || message.senderType === 'Staff' || message.senderRole === 'Staff';
