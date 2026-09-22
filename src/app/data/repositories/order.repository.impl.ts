@@ -97,6 +97,8 @@ export class OrderRepositoryImpl implements IOrderRepository {
           quantity: i.quantity || 1
         })),
         guestName: order.customerName,
+        // The visitor's country (one of the store's): the server prices every line at its prices.
+        countryId: (order as any).countryId ?? null,
         guestCountryName: order.country
       };
 
