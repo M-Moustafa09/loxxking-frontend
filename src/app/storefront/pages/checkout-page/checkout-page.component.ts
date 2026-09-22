@@ -19,6 +19,7 @@ import { HomeHeaderComponent } from '../../../shared/components/layout/home-head
 import { OrderRepositoryImpl } from '../../../data/repositories/order.repository.impl';
 import { ContextService } from '../../../core/services/context/context.service';
 import { HttpClient } from '@angular/common/http';
+import { LangService } from '../../../core/services/lang/lang.service';
 import { environment } from '../../../../environments/environment';
 
 type TrackedOrderGender = 'COMMON.MENS' | 'COMMON.WOMENS' | 'COMMON.UNISEX';
@@ -70,6 +71,23 @@ function foldArabic(value: string): string {
     .replace(/\s+/g, ' ');
 }
 
+/** "Al-Khor", "al khor" and "Alkhor"-style variants compare equal enough: case, hyphens, apostrophes. */
+function foldEnglish(value: string): string {
+  return (value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/['’`]/g, '')
+    .replace(/[-_.]+/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+interface CitySuggestion {
+  /** Arabic, exactly as the CRM holds it: what the order sends. */
+  name: string;
+  /** Display only; null → the Arabic name is shown. */
+  nameEn: string | null;
+}
+
 
 function createTrackedOrderId() {
   return 'lxk_' + Math.random().toString(36).substring(2, 11);
@@ -105,19 +123,37 @@ export class CheckoutPageComponent implements OnInit {
    * way it is matched against the couriers' cities. Any other city is still accepted.
    */
   private http = inject(HttpClient);
-  citySuggestions = signal<string[]>([]);
+  private langService = inject(LangService);
+  citySuggestions = signal<CitySuggestion[]>([]);
   private loadCitySuggestions = effect(onCleanup => {
     const countryId = this.context.currentCountryId();
     this.citySuggestions.set([]);
     if (!countryId) return;
     const sub = this.http
-      .get<{ data?: string[] }>(`${environment.apiBaseUrl}/checkout-cities`, { params: { countryId } })
+      .get<{ data?: string[]; items?: CitySuggestion[] }>(`${environment.apiBaseUrl}/checkout-cities`, { params: { countryId } })
       .subscribe({
-        next: res => this.citySuggestions.set(res?.data ?? []),
+        next: res => this.citySuggestions.set(res?.items ?? (res?.data ?? []).map(name => ({ name, nameEn: null }))),
         error: () => this.citySuggestions.set([]), // no suggestions still checks out
       });
     onCleanup(() => sub.unsubscribe());
   }, { allowSignalWrites: true }); // Angular 18 refuses the reset above without it
+
+  /**
+   * A city shows in the storefront's language, but the order always carries its Arabic name: the CRM
+   * matches that text against the couriers' cities (owner decision 2026-09-22). A city with no English
+   * name shows in Arabic.
+   */
+  cityLabel(city: CitySuggestion): string {
+    return this.langService.effectiveLang() === 'en' && city.nameEn ? city.nameEn : city.name;
+  }
+
+  /** What the order sends: the Arabic name of a known city in either language, else the text as typed. */
+  cityForOrder(): string {
+    const typed = this.city().trim();
+    const known = this.citySuggestions().find(c =>
+      foldArabic(c.name) === foldArabic(typed) || (!!c.nameEn && foldEnglish(c.nameEn) === foldEnglish(typed)));
+    return known ? known.name : typed;
+  }
 
   /**
    * Our own suggestion list, not a <datalist>: the browser draws a datalist itself, so it cannot be
@@ -128,15 +164,19 @@ export class CheckoutPageComponent implements OnInit {
   activeCityIndex = signal(-1);
   filteredCities = computed(() => {
     const all = this.citySuggestions();
-    const typed = foldArabic(this.city());
-    if (!typed) return all;
-    const starts: string[] = [];
-    const contains: string[] = [];
+    const typedAr = foldArabic(this.city());
+    const typedEn = foldEnglish(this.city());
+    if (!typedAr) return all;
+    const starts: CitySuggestion[] = [];
+    const contains: CitySuggestion[] = [];
     for (const city of all) {
-      const folded = foldArabic(city);
-      // «جيزة» should find «الجيزة»: the article is not what people type first.
-      if (folded.startsWith(typed) || folded.replace(/^ال/, '').startsWith(typed)) starts.push(city);
-      else if (folded.includes(typed)) contains.push(city);
+      // Both names are searched whatever the language: people type whichever keyboard is open.
+      const ar = foldArabic(city.name);
+      const en = city.nameEn ? foldEnglish(city.nameEn) : '';
+      // «جيزة» should find «الجيزة» and "khor" "Al Khor": the article is not what people type first.
+      if (ar.startsWith(typedAr) || ar.replace(/^ال/, '').startsWith(typedAr)
+        || (!!typedEn && !!en && (en.startsWith(typedEn) || en.replace(/^(al|el|as|ad|ar|az|an|at) /, '').startsWith(typedEn)))) starts.push(city);
+      else if (ar.includes(typedAr) || (!!typedEn && en.includes(typedEn))) contains.push(city);
     }
     return [...starts, ...contains];
   });
@@ -144,7 +184,7 @@ export class CheckoutPageComponent implements OnInit {
     const list = this.filteredCities();
     // Nothing to offer, or the customer already has exactly the one suggestion: stay out of the way.
     return this.cityListOpen() && list.length > 0
-      && !(list.length === 1 && foldArabic(list[0]) === foldArabic(this.city()));
+      && !(list.length === 1 && this.cityLabel(list[0]) === this.city().trim());
   });
 
   onCityTyped(value: string) {
@@ -153,8 +193,8 @@ export class CheckoutPageComponent implements OnInit {
     this.activeCityIndex.set(-1);
   }
 
-  pickCity(city: string) {
-    this.city.set(city);
+  pickCity(city: CitySuggestion) {
+    this.city.set(this.cityLabel(city));
     this.cityListOpen.set(false);
     this.activeCityIndex.set(-1);
   }
@@ -274,7 +314,7 @@ export class CheckoutPageComponent implements OnInit {
       total: this.total(),
       customerName: this.fullName().trim(),
       phone: this.phone().trim(),
-      city: this.city().trim(),
+      city: this.cityForOrder(),
       area: this.area().trim(),
       address: this.address().trim(),
       notes: this.notes().trim(),
@@ -321,7 +361,7 @@ export class CheckoutPageComponent implements OnInit {
       total: this.total(),
       customerName: this.fullName().trim(),
       phone: this.phone().trim(),
-      city: this.city().trim(),
+      city: this.cityForOrder(),
       area: this.area().trim(),
       address: this.address().trim(),
       paymentMethod: this.paymentMethod() === 'bank' ? 'تحويل بنكي' : 'الدفع عند الاستلام',

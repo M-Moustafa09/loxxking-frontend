@@ -111,7 +111,7 @@
                     [attr.aria-selected]="i === activeCityIndex()"
                     (mousedown)="$event.preventDefault(); pickCity(suggestion)"
                   >
-                    {{ suggestion }}
+                    {{ cityLabel(suggestion) }}
                   </li>
                 </ul>
               </div>
