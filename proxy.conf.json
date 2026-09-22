@@ -12,6 +12,13 @@
     "changeOrigin": true,
     "logLevel": "debug"
   },
+  "/catalogHub": {
+    "target": "http://localhost:5050",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
   "/uploads": {
     "target": "http://localhost:5050",
     "secure": false,

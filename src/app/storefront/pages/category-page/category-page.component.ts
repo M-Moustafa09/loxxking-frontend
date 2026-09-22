@@ -12,6 +12,8 @@ import { LangService } from '../../../core/services/lang/lang.service';
 import { products, categories } from '../../../shared/data/mockData';
 import { t } from '../../../shared/i18n/translations';
 import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const sortOptions = [
   { value: 'popular', en: 'Most Popular', ar: 'الأكثر شهرة' },
@@ -83,6 +85,15 @@ export class CategoryPageComponent implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       this.queryString.set(params.get('q') || '');
     });
+
+    // The admin added, edited or re-priced a product: update the list in place — no spinner, and
+    // the shopper keeps the rows already opened with «load more».
+    inject(CatalogLiveService).reload(() => forkJoin({
+      prods: this.productRepo.getProducts(true),
+      cats: this.productRepo.getCategories()
+    })).pipe(takeUntilDestroyed()).subscribe(({ prods, cats }) =>
+      // The category list answers [] when it fails; keep the one already loaded rather than emptying the page.
+      this.showData(prods, cats?.length ? cats : this.categoriesSignal()));
   }
 
   ngOnInit() {}
@@ -94,15 +105,7 @@ export class CategoryPageComponent implements OnInit {
       cats: this.productRepo.getCategories()
     }).subscribe({
       next: ({ prods, cats }) => {
-        if (cats && cats.length > 0) {
-          this.categoriesSignal.set(cats);
-        }
-        const slug = this.slug();
-        // A category with nothing in it shows the page's empty state. It used to fall back to the
-        // whole catalogue, so browsing one category quietly listed products from all the others.
-        const data = slug === 'all' ? prods : this.productsInCategory(prods, cats, slug);
-        this.baseData.set(data);
-        this.fitPriceRangeTo(data);
+        this.showData(prods, cats);
         this.isLoading.set(false);
         this.page.set(1);
       },
@@ -110,6 +113,18 @@ export class CategoryPageComponent implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  private showData(prods: any[], cats: any[]) {
+    if (cats && cats.length > 0) {
+      this.categoriesSignal.set(cats);
+    }
+    const slug = this.slug();
+    // A category with nothing in it shows the page's empty state. It used to fall back to the
+    // whole catalogue, so browsing one category quietly listed products from all the others.
+    const data = slug === 'all' ? prods : this.productsInCategory(prods, cats, slug);
+    this.baseData.set(data);
+    this.fitPriceRangeTo(data);
   }
 
   /**

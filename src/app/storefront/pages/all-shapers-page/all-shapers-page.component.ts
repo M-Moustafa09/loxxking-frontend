@@ -22,6 +22,8 @@ import {
   ShaperCatalogItem,
 } from '../../../data/mock/all-shapers.mock';
 import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const productTypeOptions: Array<{ value: ProductType | 'all'; label: string }> = [
   { value: 'all', label: 'STOREFRONT.AUTO_STR_381' },
@@ -124,6 +126,13 @@ export class AllShapersPageComponent implements OnInit {
   /** The products the tiles were built from, so the cart gets the real thing and not a lookalike. */
   private loadedProducts = signal<Product[]>([]);
 
+  constructor() {
+    // The admin added, edited or re-priced a product: show it without a refresh.
+    inject(CatalogLiveService).reload(() => this.productRepo.getProducts(true))
+      .pipe(takeUntilDestroyed())
+      .subscribe(prods => this.showProducts(prods));
+  }
+
   ngOnInit() {
     this.route.queryParamMap.subscribe(params => {
       const typeFromRoute = params.get('type');
@@ -134,15 +143,14 @@ export class AllShapersPageComponent implements OnInit {
     });
 
     this.productRepo.getProducts().subscribe({
-      next: prods => {
-        this.loadedProducts.set(prods || []);
-        this.catalogItems.set((prods || []).map((p, i) => this.toCatalogItem(p, i)));
-      },
-      error: () => {
-        this.loadedProducts.set([]);
-        this.catalogItems.set([]);
-      }
+      next: prods => this.showProducts(prods),
+      error: () => this.showProducts([])
     });
+  }
+
+  private showProducts(prods: Product[] | null) {
+    this.loadedProducts.set(prods || []);
+    this.catalogItems.set((prods || []).map((p, i) => this.toCatalogItem(p, i)));
   }
 
   /**

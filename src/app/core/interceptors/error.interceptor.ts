@@ -1,8 +1,14 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import { HttpInterceptorFn, HttpErrorResponse, HttpContextToken } from '@angular/common/http';
 import { inject, Injector } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, throwError } from 'rxjs';
 import { ToastService } from '../services/toast/toast.service';
+
+/**
+ * A request the visitor did not ask for (the page reloading itself after a live catalogue change):
+ * a failure is the caller's to handle quietly, never a red toast over what the visitor is doing.
+ */
+export const SILENT_REQUEST = new HttpContextToken<boolean>(() => false);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   if (req.url.includes('/assets/') || req.url.includes('assets/i18n')) {
@@ -19,7 +25,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Do not show errors for background silent checks
-      if (req.url.includes('/users/me') || req.url.includes('/home-page-config') || req.url.includes('/sso/session-token') ||
+      if (req.context.get(SILENT_REQUEST) ||
+          req.url.includes('/users/me') || req.url.includes('/home-page-config') || req.url.includes('/sso/session-token') ||
           // The product form shows its own message and a retry button when the CRM list fails.
           req.url.includes('/crm-products') ||
           // ...and its own message when a product video upload or removal fails.
