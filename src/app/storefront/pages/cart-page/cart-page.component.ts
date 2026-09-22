@@ -52,10 +52,9 @@ function resolveCartItem(cartItem: CartItem): CartDisplayItem {
     nameAr: homeProduct?.nameAr ?? cartItem.product.nameAr ?? (cartItem.product as any).name,
     nameEn: homeProduct?.nameEn ?? cartItem.product.nameEn ?? (cartItem.product as any).name,
     image: homeProduct?.images[0] ?? cartItem.product.images[0],
-    price: homeProduct?.price ?? Math.round(cartItem.product.price),
-    oldPrice:
-      homeProduct?.originalPrice ??
-      (cartItem.product.originalPrice ? Math.round(cartItem.product.originalPrice) : undefined),
+    // Not rounded: an offer's price can carry cents (169.99), and checkout charges it exactly.
+    price: homeProduct?.price ?? cartItem.product.price,
+    oldPrice: homeProduct?.originalPrice ?? cartItem.product.originalPrice ?? undefined,
     color: isBeige ? 'STOREFRONT.AUTO_STR_483' : 'STOREFRONT.AUTO_STR_472',
   };
 }

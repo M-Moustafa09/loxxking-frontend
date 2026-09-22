@@ -48,8 +48,8 @@ export const DASHBOARD_ROUTES: Routes = [
   },
   {
     path: 'offers',
-    redirectTo: 'store-customizer',
-    pathMatch: 'full'
+    canActivate: [dashboardGuard],
+    loadComponent: () => import('./pages/offers/offers-page.component').then(m => m.OffersPageComponent)
   },
   {
     path: '**',

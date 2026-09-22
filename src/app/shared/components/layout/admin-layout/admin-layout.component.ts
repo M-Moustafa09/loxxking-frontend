@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Percent,
   Search,
   Settings,
   Store,
@@ -360,6 +361,7 @@ export class AdminLayoutComponent implements OnInit {
   readonly LogOutIcon = LogOut;
   readonly MenuIcon = Menu;
   readonly PackageIcon = Package;
+  readonly PercentIcon = Percent;
   readonly SearchIcon = Search;
   readonly SettingsIcon = Settings;
   readonly StoreIcon = Store;

@@ -1,10 +1,10 @@
 <section class="lk-offer-banner" aria-labelledby="home-offer-title" style="--lk-offer-left-background: url('assets/home/offer-left-background.png')">
     <div class="lk-offer-banner__content">
-        <p [attr.aria-label]="'STOREFRONT.AUTO_STR_148' | translate">
-            <strong>30%</strong>
-            <span>{{ 'STOREFRONT.AUTO_STR_442' | translate }}</span>
+        <p [attr.aria-label]="lead + ' ' + percent">
+            <strong>{{ percent }}</strong>
+            <span>{{ lead }}</span>
         </p>
-        <h2 id="home-offer-title">{{ 'STOREFRONT.AUTO_STR_205' | translate }}</h2>
+        <h2 id="home-offer-title">{{ title }}</h2>
         <a routerLink="/offers">{{ 'STOREFRONT.AUTO_STR_380' | translate }}</a>
     </div>
     <a routerLink="/offers" class="lk-offer-banner__media" [attr.aria-label]="'STOREFRONT.AUTO_STR_126' | translate">

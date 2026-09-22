@@ -40,7 +40,7 @@
         [index]="1" 
         [enabled]="config().showCurrentOffers" 
         [isFirst]="false" 
-        [isLast]="false"
+        [isLast]="true"
         [draggable]="false" 
         [showReorder]="false" 
         [showCopy]="false" 
@@ -53,88 +53,6 @@
             [valueAr]="$any(config())['currentOffersTitleAr'] || ''" 
             [valueEn]="$any(config())['currentOffersTitleEn'] || ''" 
             (valueChange)="updateBilingualField('currentOffersTitle', $event.lang, $event.value)">
-        </app-bilingual-input>
-    </app-section-card>
-
-    <!-- 3. وفر أكثر مع الباقات -->
-    <app-section-card 
-        title="وفر أكثر مع الباقات" 
-        [index]="2" 
-        [enabled]="config().showBundles" 
-        [isFirst]="false" 
-        [isLast]="false"
-        [draggable]="false" 
-        [showReorder]="false" 
-        [showCopy]="false" 
-        [showDelete]="false" 
-        (toggle)="updateConfig({ showBundles: $event })">
-        <app-bilingual-input 
-            title="عنوان الباقات" 
-            labelAr="عربي / AR" 
-            labelEn="English / EN" 
-            [valueAr]="$any(config())['bundlesTitleAr'] || ''" 
-            [valueEn]="$any(config())['bundlesTitleEn'] || ''" 
-            (valueChange)="updateBilingualField('bundlesTitle', $event.lang, $event.value)">
-        </app-bilingual-input>
-        <app-bilingual-input 
-            title="وصف الباقات" 
-            labelAr="عربي / AR" 
-            labelEn="English / EN" 
-            [valueAr]="$any(config())['bundlesSubtitleAr'] || ''" 
-            [valueEn]="$any(config())['bundlesSubtitleEn'] || ''" 
-            (valueChange)="updateBilingualField('bundlesSubtitle', $event.lang, $event.value)">
-        </app-bilingual-input>
-    </app-section-card>
-
-    <!-- 4. عروض شراء أكثر من قطعة -->
-    <app-section-card 
-        title="عروض شراء أكثر من قطعة" 
-        [index]="3" 
-        [enabled]="config().showMultiBuy" 
-        [isFirst]="false" 
-        [isLast]="false"
-        [draggable]="false" 
-        [showReorder]="false" 
-        [showCopy]="false" 
-        [showDelete]="false" 
-        (toggle)="updateConfig({ showMultiBuy: $event })">
-        <app-bilingual-input 
-            title="عنوان القسم" 
-            labelAr="عربي / AR" 
-            labelEn="English / EN" 
-            [valueAr]="$any(config())['multiBuyTitleAr'] || ''" 
-            [valueEn]="$any(config())['multiBuyTitleEn'] || ''" 
-            (valueChange)="updateBilingualField('multiBuyTitle', $event.lang, $event.value)">
-        </app-bilingual-input>
-    </app-section-card>
-
-    <!-- 5. العروض محدودة المدة -->
-    <app-section-card 
-        title="العروض محدودة المدة" 
-        [index]="4" 
-        [enabled]="config().showLimitedOffer" 
-        [isFirst]="false" 
-        [isLast]="true"
-        [draggable]="false" 
-        [showReorder]="false" 
-        [showCopy]="false" 
-        [showDelete]="false" 
-        (toggle)="updateConfig({ showLimitedOffer: $event })">
-        <app-bilingual-input 
-            title="عنوان العرض" 
-            labelAr="عربي / AR" 
-            labelEn="English / EN" 
-            [valueAr]="$any(config())['limitedOfferTitleAr'] || ''" 
-            [valueEn]="$any(config())['limitedOfferTitleEn'] || ''" 
-            (valueChange)="updateBilingualField('limitedOfferTitle', $event.lang, $event.value)">
-        </app-bilingual-input>
-        <app-bilingual-input 
-            title="نص التنبيه الفرعي" 
-            labelAr="عربي / AR" 
-            labelEn="English / EN" 
-            [valueAr]="$any(config())['limitedOfferSubtitleAr'] || ''" 
-            [valueEn]="$any(config())['limitedOfferSubtitleEn'] || ''" 
-            (valueChange)="updateBilingualField('limitedOfferSubtitle', $event.lang, $event.value)">
         </app-bilingual-input>
     </app-section-card>
 </div>
