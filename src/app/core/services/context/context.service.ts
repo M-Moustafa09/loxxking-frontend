@@ -1,22 +1,25 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
-import { catchError, of, tap } from 'rxjs';
+import { catchError, firstValueFrom, of, timeout } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { isReturningVisitor } from '../../utils/visitor-status.util';
 
 export interface AppContext {
   country: string;
-  countryId?: string;
+  countryCode?: string | null;
+  /** Null when the visitor's country is not one the store sells in: prices are then international (USD). */
+  countryId?: string | null;
   currency: string;
 }
+
+/** How long the app waits for the visitor's country before showing international (USD) prices. */
+const CONTEXT_TIMEOUT_MS = 4000;
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContextService {
-  private readonly CURRENCY_STORAGE_KEY = `${environment.storagePrefix}currency`;
-  
   public currentCurrency = signal<string>('USD');
   public currentCountry = signal<string>('Unknown');
   public currentCountryId = signal<string | null>(null);
@@ -24,27 +27,33 @@ export class ContextService {
 
   constructor(private http: HttpClient, private translate: TranslateService) {}
 
-  initContext(): void {
-    const explicitCurrency = localStorage.getItem(this.CURRENCY_STORAGE_KEY);
-    
-    // Resolve context
-    this.http.get<AppContext>(`${environment.apiUrl}/v1/context/init`)
-      .pipe(
-        catchError(() => of<AppContext>({ country: 'Unknown', currency: 'USD', countryId: undefined }))
+  /**
+   * Resolves the visitor's country before the app renders (APP_INITIALIZER): every price the
+   * storefront shows is picked for that country (ProductRepositoryImpl), so it must be known first.
+   * A visitor from one of the store's countries sees its currency; anyone else — and anyone whose
+   * country cannot be read in time — sees international USD prices. The currency is no longer
+   * overridable: it has to be the currency of the prices shown.
+   * Outside production, `?country=LY` on the page URL simulates a visitor from that country.
+   */
+  init(): Promise<void> {
+    let url = `${environment.apiUrl}/v1/context/init`;
+    if (!environment.production && typeof window !== 'undefined') {
+      const simulated = new URLSearchParams(window.location.search).get('country');
+      if (simulated) url += `?country=${encodeURIComponent(simulated)}`;
+    }
+
+    const international: AppContext = { country: 'Unknown', currency: 'USD', countryId: null };
+    return firstValueFrom(
+      this.http.get<AppContext>(url).pipe(
+        timeout(CONTEXT_TIMEOUT_MS),
+        catchError(() => of(international))
       )
-      .subscribe((context: AppContext) => {
-        this.currentCountry.set(context.country);
-        if (context.countryId) {
-          this.currentCountryId.set(context.countryId);
-        }
-        
-        // Priority: Explicit LocalStorage > Detected Context > USD
-        if (explicitCurrency) {
-          this.setCurrency(explicitCurrency);
-        } else {
-          this.setCurrency(context.currency || 'USD');
-        }
-      });
+    ).then(context => {
+      const ctx = context ?? international;
+      this.currentCountry.set(ctx.country);
+      this.currentCountryId.set(ctx.countryId || null);
+      this.setCurrency(ctx.countryId ? (ctx.currency || 'USD') : 'USD');
+    });
   }
 
   /**
@@ -76,11 +85,6 @@ export class ContextService {
     })
       .pipe(catchError(() => of(null)))
       .subscribe();
-  }
-
-  setExplicitCurrency(currency: string): void {
-    localStorage.setItem(this.CURRENCY_STORAGE_KEY, currency);
-    this.setCurrency(currency);
   }
 
   private resolveCurrencySymbol(currency: string, locale: string): string {

@@ -31,8 +31,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (!isPlatformBrowser(this.platformId)) return;
-
-    this.contextService.initContext();
     // The path the visitor landed on (the router has not run yet, so read the address bar).
     this.contextService.logVisit(window.location.pathname || '/', this.langService.storefrontLang());
 

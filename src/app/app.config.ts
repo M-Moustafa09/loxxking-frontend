@@ -1,6 +1,7 @@
 import { ApplicationConfig, provideZoneChangeDetection, importProvidersFrom, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { AuthService } from './core/services/auth/auth.service';
+import { ContextService } from './core/services/context/context.service';
 import { syncConfigsWithDatabase } from './core/services/page-configs/config-sync.util';
 
 export function initializeAuth(authService: AuthService) {
@@ -116,6 +117,13 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: () => () => syncConfigsWithDatabase(),
+      multi: true
+    },
+    {
+      // The visitor's country decides every price shown, so it is resolved before the first render.
+      provide: APP_INITIALIZER,
+      useFactory: (context: ContextService) => () => context.init(),
+      deps: [ContextService],
       multi: true
     },
     provideZoneChangeDetection({ eventCoalescing: true }), 

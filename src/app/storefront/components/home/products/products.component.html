@@ -28,7 +28,9 @@
                     <h3>{{getLocalizedProductName(product)}}</h3>
                     <div class="lk-home-product-card__price">
                         <strong>{{product.price}} {{ 'COMMON.CURRENCY' | translate }}</strong>
-                        <del>{{product.oldPrice}} {{ 'COMMON.CURRENCY' | translate }}</del>
+                        @if (product.oldPrice > product.price) {
+                            <del>{{product.oldPrice}} {{ 'COMMON.CURRENCY' | translate }}</del>
+                        }
                     </div>
                     <div class="lk-home-product-card__rating">
                         <span class="lk-home-product-card__stars" [attr.aria-label]="(langService.storefrontLang() === 'ar' ? 'التقييم ' + product.rating + ' من 5' : 'Rating ' + product.rating + ' of 5')">

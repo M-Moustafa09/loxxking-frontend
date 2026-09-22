@@ -107,7 +107,7 @@
                         <span class="lk-product-price-number">{{display.price}}</span>
                         <small>{{ 'COMMON.CURRENCY' | translate }}</small>
                     </strong>
-                    <del *ngIf="display.oldPrice">{{display.oldPrice}} {{ 'COMMON.CURRENCY' | translate }}</del>
+                    <del *ngIf="display.oldPrice > display.price">{{display.oldPrice}} {{ 'COMMON.CURRENCY' | translate }}</del>
                 </div>
 
                 <p class="lk-tax-note">

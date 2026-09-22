@@ -6,6 +6,13 @@ import { IProductRepository } from '../../domain/interfaces/product.repository';
 import { Product, Category, Review } from '../../domain/models/product.model';
 import { products, categories, reviews } from '../../shared/data/mockData';
 import { environment } from '../../../environments/environment';
+import { ContextService } from '../../core/services/context/context.service';
+
+/** A price the visitor can actually be charged, in the currency the store shows them. */
+interface VisitorPrice {
+  price: number;
+  originalPrice?: number;
+}
 
 const ID_ALIAS_MAP: Record<string, string> = {
   'home-product-1': 'prod-2',
@@ -49,6 +56,40 @@ const GUID_MAP: Record<string, string> = {
 })
 export class ProductRepositoryImpl implements IProductRepository {
   private http = inject(HttpClient);
+  private context = inject(ContextService);
+
+  /**
+   * The product's price for this visitor (owner decisions 2026-09-21). One currency per visitor,
+   * so the cart can always be totalled:
+   *  - a visitor from one of the store's countries sees that country's price, in its currency; a
+   *    product with no price for their country is not offered to them;
+   *  - anyone else sees the international USD price; a product without one is not offered.
+   * The country is resolved before the app renders (ContextService.init).
+   * An API without per-country prices (countryPrices absent) keeps the legacy single price.
+   */
+  private visitorPrice(p: any): VisitorPrice | null {
+    if (!Array.isArray(p.countryPrices)) {
+      const legacy = p.price ?? p.basePrice;
+      return legacy != null ? { price: legacy, originalPrice: p.originalPrice ?? undefined } : null;
+    }
+
+    const countryId = this.context.currentCountryId();
+    if (countryId) {
+      const own = p.countryPrices.find((cp: any) => cp.countryId === countryId);
+      return own ? { price: own.price, originalPrice: own.originalPrice ?? undefined } : null;
+    }
+
+    return p.internationalPrice != null
+      ? { price: p.internationalPrice, originalPrice: p.internationalOriginalPrice ?? undefined }
+      : null;
+  }
+
+  /** Maps an API product, or returns null when it has no price for this visitor (see visitorPrice). */
+  private mapOfferedProduct(p: any): Product | null {
+    const price = this.visitorPrice(p);
+    if (!price) return null;
+    return { ...this.mapProduct(p), price: price.price, originalPrice: price.originalPrice };
+  }
 
   private mapProduct(p: any): Product {
     let sizeChart: any[] = [];
@@ -177,7 +218,7 @@ export class ProductRepositoryImpl implements IProductRepository {
         map(res => {
           const items = res?.data ?? res ?? [];
           if (!Array.isArray(items)) return [];
-          return items.map(p => this.mapProduct(p));
+          return items.map(p => this.mapOfferedProduct(p)).filter((p): p is Product => p !== null);
         }),
         catchError(error => {
           this.reportFailure('The product list', error);
@@ -194,7 +235,8 @@ export class ProductRepositoryImpl implements IProductRepository {
       return this.http.get<any>(`${environment.apiBaseUrl}/products/${guid}`).pipe(
         map(res => {
           const p = res?.data ?? res;
-          return p ? this.mapProduct(p) : undefined;
+          // Not sold in the visitor's country: the page shows its «not found» state.
+          return p ? this.mapOfferedProduct(p) ?? undefined : undefined;
         }),
         catchError(error => {
           this.reportFailure(`Product ${id}`, error);
@@ -210,7 +252,8 @@ export class ProductRepositoryImpl implements IProductRepository {
       return this.http.get<any>(`${environment.apiBaseUrl}/products/slug/${slug}`).pipe(
         map(res => {
           const p = res?.data ?? res;
-          return p ? this.mapProduct(p) : undefined;
+          // Not sold in the visitor's country: the page shows its «not found» state.
+          return p ? this.mapOfferedProduct(p) ?? undefined : undefined;
         }),
         catchError(error => {
           this.reportFailure(`Product ${slug}`, error);

@@ -28,6 +28,27 @@ export interface AdminProduct {
   returnPolicy: string | null;
   /** The one product video, or null. Uploaded and removed on its own endpoint, not by the form save. */
   videoUrl: string | null;
+  /** International USD price, shown where the visitor's country has no price. Null on products made before per-country pricing. */
+  internationalPrice: number | null;
+  internationalOriginalPrice: number | null;
+  countryPrices: CountryPrice[];
+}
+
+/** A product's price in one of the store's countries, in that country's currency. */
+export interface CountryPrice {
+  countryId: string;
+  price: number | null;
+  /** Price before the discount (shown struck through); null = no discount. */
+  originalPrice: number | null;
+}
+
+/** One of the store's countries (the CRM's 16) — what the price picker offers. */
+export interface StoreCountry {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  currency: string;
 }
 
 export interface AdminCategory {
@@ -66,7 +87,10 @@ export interface ProductFormValue {
   nameEn: string;
   description: string;
   images: string[];
-  basePrice: number;
+  /** The international USD price (the API still calls it basePrice). */
+  basePrice: number | null;
+  internationalOriginalPrice: number | null;
+  countryPrices: CountryPrice[];
   productCode: string | null;
 }
 
@@ -83,9 +107,11 @@ export class AdminProductsService {
 
   private readonly productsSignal = signal<AdminProduct[]>([]);
   private readonly categoriesSignal = signal<AdminCategory[]>([]);
+  private readonly countriesSignal = signal<StoreCountry[]>([]);
 
   readonly products = this.productsSignal.asReadonly();
   readonly categories = this.categoriesSignal.asReadonly();
+  readonly countries = this.countriesSignal.asReadonly();
 
   fetchProducts(): Observable<AdminProduct[]> {
     return this.http.get<ApiEnvelope<any[]>>(`${environment.apiBaseUrl}/products`).pipe(
@@ -105,6 +131,19 @@ export class AdminProductsService {
         productCount: Number(row.productCount ?? 0)
       }))),
       tap(categories => this.categoriesSignal.set(categories))
+    );
+  }
+
+  fetchCountries(): Observable<StoreCountry[]> {
+    return this.http.get<ApiEnvelope<any[]>>(`${environment.apiBaseUrl}/countries`).pipe(
+      map(res => (res?.data ?? []).map(row => ({
+        id: row.id,
+        code: row.code ?? '',
+        nameAr: row.nameAr || row.name || '',
+        nameEn: row.name ?? '',
+        currency: row.currency ?? ''
+      })).sort((a, b) => a.nameAr.localeCompare(b.nameAr, 'ar'))),
+      tap(countries => this.countriesSignal.set(countries))
     );
   }
 
@@ -153,7 +192,9 @@ export class AdminProductsService {
       shippingPolicy: null,
       returnPolicy: null,
       basePrice: form.basePrice,
-      productCode: form.productCode
+      productCode: form.productCode,
+      internationalOriginalPrice: form.internationalOriginalPrice,
+      countryPrices: this.toCountryPricesPayload(form.countryPrices)
     });
   }
 
@@ -172,7 +213,9 @@ export class AdminProductsService {
       shippingPolicy: existing.shippingPolicy,
       returnPolicy: existing.returnPolicy,
       basePrice: form.basePrice,
-      productCode: form.productCode
+      productCode: form.productCode,
+      internationalOriginalPrice: form.internationalOriginalPrice,
+      countryPrices: this.toCountryPricesPayload(form.countryPrices)
     });
   }
 
@@ -209,7 +252,23 @@ export class AdminProductsService {
       features: row.features ?? null,
       shippingPolicy: row.shippingPolicy ?? null,
       returnPolicy: row.returnPolicy ?? null,
-      videoUrl: row.videoUrl ?? null
+      videoUrl: row.videoUrl ?? null,
+      internationalPrice: row.internationalPrice ?? null,
+      internationalOriginalPrice: row.internationalOriginalPrice ?? null,
+      countryPrices: (Array.isArray(row.countryPrices) ? row.countryPrices : []).map((cp: any) => ({
+        countryId: cp.countryId,
+        price: cp.price ?? null,
+        originalPrice: cp.originalPrice ?? null
+      }))
     };
+  }
+
+  /** The API replaces the whole set on save; rows are validated by the form before this. */
+  private toCountryPricesPayload(rows: CountryPrice[]) {
+    return rows.map(r => ({
+      countryId: r.countryId,
+      price: Number(r.price),
+      originalPrice: r.originalPrice ? Number(r.originalPrice) : null
+    }));
   }
 }
