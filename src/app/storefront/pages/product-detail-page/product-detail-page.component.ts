@@ -13,7 +13,7 @@ import { products, Product } from '../../../shared/data/mockData';
 import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
 import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Observable, catchError, filter, map, of, switchMap } from 'rxjs';
+import { EMPTY, Observable, catchError, filter, map, of, switchMap, throwError } from 'rxjs';
 import { ProductFeatureIconComponent } from '../../../shared/components/ui/feature-icon/product-feature-icon.component';
 import { LangService } from '../../../core/services/lang/lang.service';
 import { ProductReviewsComponent } from '../../components/product/product-reviews/product-reviews.component';
@@ -107,7 +107,8 @@ export class ProductDetailPageComponent {
     // The shopper keeps the picture, size and quantity they chose; a failed reload keeps the page.
     inject(CatalogLiveService).changesFor(() => this.product?.id).pipe(
       filter(() => !!this.routeId),
-      switchMap(() => this.reloadProduct(this.routeId)),
+      // The loaded product's own id when there is one: the address may be a slug or an old alias.
+      switchMap(() => this.reloadProduct(this.product?.id ?? this.routeId)),
       takeUntilDestroyed()
     ).subscribe(p => {
       if (p) {
@@ -122,6 +123,8 @@ export class ProductDetailPageComponent {
   /** The product again, null when it is gone (removed, or no longer sold in this country), nothing on a failure. */
   private reloadProduct(id: string): Observable<Product | null> {
     return this.productRepo.getProductById(id, true).pipe(
+      // Not found by id is not "gone" yet — the first load also goes on to the slug.
+      catchError(error => error?.status === 404 ? of(undefined) : throwError(() => error)),
       switchMap(p => p ? of(p) : this.productRepo.getProductBySlug(id, true)),
       map(p => (p as Product | undefined) ?? null),
       catchError(error => error?.status === 404 ? of(null) : EMPTY)
