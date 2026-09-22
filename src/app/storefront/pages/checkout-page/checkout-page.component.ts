@@ -18,6 +18,8 @@ import { StoreLayoutComponent } from '../../../shared/components/layout/store-la
 import { HomeHeaderComponent } from '../../../shared/components/layout/home-header/home-header.component';
 import { OrderRepositoryImpl } from '../../../data/repositories/order.repository.impl';
 import { ContextService } from '../../../core/services/context/context.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 type TrackedOrderGender = 'COMMON.MENS' | 'COMMON.WOMENS' | 'COMMON.UNISEX';
 type BankTransferReceipt = { name: string; type: string; dataUrl: string };
@@ -57,8 +59,6 @@ const BANK_RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 const WALLET_PAYMENT_SESSION_KEY = 'lk-wallet-payment-session';
 const ORDER_COUNTRY = 'SHARED.AUTO_STR_79';
 
-const CHECKOUT_CITY_OPTIONS = ['STOREFRONT.AUTO_STR_449', 'STOREFRONT.AUTO_STR_485', 'STOREFRONT.AUTO_STR_450', 'CHECKOUT.CITY'];
-const CHECKOUT_AREA_OPTIONS = ['STOREFRONT.AUTO_STR_474', 'STOREFRONT.AUTO_STR_475', 'STOREFRONT.AUTO_STR_486', 'STOREFRONT.AUTO_STR_487', 'STOREFRONT.AUTO_STR_488'];
 
 function createTrackedOrderId() {
   return 'lxk_' + Math.random().toString(36).substring(2, 11);
@@ -87,8 +87,27 @@ export class CheckoutPageComponent implements OnInit {
    */
   readonly canOrderHere = computed(() => !!this.context.currentCountryId());
 
-  CHECKOUT_CITY_OPTIONS = CHECKOUT_CITY_OPTIONS;
-  CHECKOUT_AREA_OPTIONS = CHECKOUT_AREA_OPTIONS;
+  /**
+   * City and area are typed freely (owner decision 2026-09-22): a fixed list of three Saudi cities
+   * offered every country the same cities, and sent nothing to the server. The city suggestions are
+   * the CRM's own city list for the visitor's country, so a picked city reaches the CRM spelled the
+   * way it is matched against the couriers' cities. Any other city is still accepted.
+   */
+  private http = inject(HttpClient);
+  citySuggestions = signal<string[]>([]);
+  private loadCitySuggestions = effect(onCleanup => {
+    const countryId = this.context.currentCountryId();
+    this.citySuggestions.set([]);
+    if (!countryId) return;
+    const sub = this.http
+      .get<{ data?: string[] }>(`${environment.apiBaseUrl}/checkout-cities`, { params: { countryId } })
+      .subscribe({
+        next: res => this.citySuggestions.set(res?.data ?? []),
+        error: () => this.citySuggestions.set([]), // no suggestions still checks out
+      });
+    onCleanup(() => sub.unsubscribe());
+  }, { allowSignalWrites: true }); // Angular 18 refuses the reset above without it
+
   BANK_TRANSFER_DETAILS = BANK_TRANSFER_DETAILS;
 
   configService = inject(CheckoutPageConfigService);
@@ -167,7 +186,7 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   hasRequiredCheckoutData() {
-    return Boolean(this.fullName().trim() && this.phone().trim() && this.address().trim());
+    return Boolean(this.fullName().trim() && this.phone().trim() && this.city().trim() && this.address().trim());
   }
 
   startWalletPayment() {
@@ -187,8 +206,8 @@ export class CheckoutPageComponent implements OnInit {
       total: this.total(),
       customerName: this.fullName().trim(),
       phone: this.phone().trim(),
-      city: this.city(),
-      area: this.area(),
+      city: this.city().trim(),
+      area: this.area().trim(),
       address: this.address().trim(),
       notes: this.notes().trim(),
     };
@@ -234,8 +253,8 @@ export class CheckoutPageComponent implements OnInit {
       total: this.total(),
       customerName: this.fullName().trim(),
       phone: this.phone().trim(),
-      city: this.city(),
-      area: this.area(),
+      city: this.city().trim(),
+      area: this.area().trim(),
       address: this.address().trim(),
       paymentMethod: this.paymentMethod() === 'bank' ? 'تحويل بنكي' : 'الدفع عند الاستلام',
       country: this.context.currentCountry(),

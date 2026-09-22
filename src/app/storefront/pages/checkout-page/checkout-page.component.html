@@ -73,26 +73,37 @@
 
             <div class="lk-checkout-field-grid">
               <label class="lk-checkout-field">
-                <span>{{ 'DASHBOARD.AUTO_STR_393' | translate }}</span>
-                <div class="lk-checkout-field__input is-select">
-                  <lucide-icon name="map" aria-hidden="true"></lucide-icon>
-                  <select [(ngModel)]="area" name="area">
-                    <option value="">{{ 'STOREFRONT.AUTO_STR_331' | translate }}</option>
-                    <option *ngIf="area() && !CHECKOUT_AREA_OPTIONS.includes(area())" [value]="area()">{{ area() }}</option>
-                    <option *ngFor="let option of CHECKOUT_AREA_OPTIONS" [value]="option">{{ option | translate }}</option>
-                  </select>
+                <span>{{ 'CHECKOUT.CITY' | translate }}<b class="lk-checkout-required">*</b></span>
+                <div class="lk-checkout-field__input">
+                  <lucide-icon name="map-pin" aria-hidden="true"></lucide-icon>
+                  <input
+                    type="text"
+                    [(ngModel)]="city"
+                    name="city"
+                    list="lk-checkout-city-suggestions"
+                    [placeholder]="'CHECKOUT.CITY_PLACEHOLDER' | translate"
+                    required
+                    maxlength="100"
+                    autocomplete="address-level2"
+                  />
+                  <datalist id="lk-checkout-city-suggestions">
+                    <option *ngFor="let suggestion of citySuggestions()" [value]="suggestion"></option>
+                  </datalist>
                 </div>
               </label>
 
               <label class="lk-checkout-field">
-                <span>{{ 'CHECKOUT.CITY' | translate }}</span>
-                <div class="lk-checkout-field__input is-select">
-                  <lucide-icon name="map-pin" aria-hidden="true"></lucide-icon>
-                  <select [(ngModel)]="city" name="city">
-                    <option value="">{{ 'STOREFRONT.AUTO_STR_330' | translate }}</option>
-                    <option *ngIf="city() && !CHECKOUT_CITY_OPTIONS.includes(city())" [value]="city()">{{ city() }}</option>
-                    <option *ngFor="let option of CHECKOUT_CITY_OPTIONS" [value]="option">{{ option | translate }}</option>
-                  </select>
+                <span>{{ 'DASHBOARD.AUTO_STR_393' | translate }}</span>
+                <div class="lk-checkout-field__input">
+                  <lucide-icon name="map" aria-hidden="true"></lucide-icon>
+                  <input
+                    type="text"
+                    [(ngModel)]="area"
+                    name="area"
+                    [placeholder]="'CHECKOUT.AREA_PLACEHOLDER' | translate"
+                    maxlength="100"
+                    autocomplete="address-level3"
+                  />
                 </div>
               </label>
             </div>

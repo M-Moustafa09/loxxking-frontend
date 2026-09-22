@@ -775,6 +775,8 @@
     "SUCCESS_DESC": "Thank you for shopping with LOXX KING. Your order has been received successfully.",
     "PHONE": "Phone Number",
     "CITY": "City",
+    "CITY_PLACEHOLDER": "Type your city",
+    "AREA_PLACEHOLDER": "District or area (optional)",
     "COUNTRY": "Country",
     "BANK_TRANSFER": "Bank Transfer",
     "CUSTOMER_NAME": "Customer Name",

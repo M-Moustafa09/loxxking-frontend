@@ -775,6 +775,8 @@
     "SUCCESS_DESC": "شكراً لتسوقك من LOXX KING. تم استلام طلبك بنجاح.",
     "PHONE": "رقم الهاتف",
     "CITY": "المدينة",
+    "CITY_PLACEHOLDER": "اكتبي مدينتك",
+    "AREA_PLACEHOLDER": "الحي أو المنطقة (اختياري)",
     "COUNTRY": "الدولة",
     "BANK_TRANSFER": "تحويل بنكي",
     "CUSTOMER_NAME": "اسم العميل",
