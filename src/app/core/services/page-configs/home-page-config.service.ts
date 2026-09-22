@@ -14,7 +14,8 @@ const CONFIG_KEY = 'loxxking-homepage-config';
 const heroVisual = '/assets/home/hero-visual-hd.png';
 const offerBanner = '/assets/home/offer-products-banner-hd.png';
 
-const initialConfig: PageConfig = {
+/** What the home page shows until the customizer first saves (the offers screen starts from it too). */
+export const initialConfig: PageConfig = {
   sections: [
     {
       id: 'sec-hero',

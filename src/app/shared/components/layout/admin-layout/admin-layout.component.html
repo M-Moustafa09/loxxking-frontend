@@ -16,7 +16,7 @@
 
     <div class="dashboard-home__header-actions" [attr.aria-label]="'DASHBOARD.AUTO_STR_48' | translate">
       <!-- One gear in place of the old «عرض الأسعار» / «عرض المنتجات» pair. It opens a small menu:
-           the products screen and the categories screen. -->
+           the products, categories and offers screens. -->
       <div class="lk-settings-menu">
         <button
           type="button"
@@ -45,6 +45,10 @@
             <button type="button" role="menuitem" class="lk-settings-menu__item" (click)="openSettingsItem('/admin/categories')">
               <lucide-icon [img]="TagIcon" size="16"></lucide-icon>
               <span>{{ 'ADMIN_SETTINGS_MENU.MANAGE_CATEGORIES' | translate }}</span>
+            </button>
+            <button type="button" role="menuitem" class="lk-settings-menu__item" (click)="openSettingsItem('/admin/offers')">
+              <lucide-icon [img]="PercentIcon" size="16"></lucide-icon>
+              <span>{{ 'ADMIN_SETTINGS_MENU.MANAGE_OFFERS' | translate }}</span>
             </button>
           </div>
         </ng-container>

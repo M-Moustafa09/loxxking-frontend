@@ -15,7 +15,29 @@ interface VisitorPrice {
   originalPrice?: number;
 }
 
-const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+/**
+ * A running offer (owner decisions 2026-09-22) takes its percentage off the visitor's price. The
+ * struck-through price is the higher one before it: the product's own «السعر قبل الخصم» when set,
+ * else the price itself. The sum and rounding are the server's (ActiveOffers.Apply), because
+ * checkout charges the server's figure and the cart must show the same one. Every storefront page
+ * reads products through here, so the offer shows on cards, the product page, search and the cart.
+ */
+function applyOffer(price: VisitorPrice, offerPercent: unknown): VisitorPrice & { offerPercent?: number } {
+  const percent = Number(offerPercent);
+  if (!(percent > 0 && percent < 100)) return price;
+  // Whole numbers only (cents × hundredths of a percent), rounding half up like the server's
+  // AwayFromZero: in floats 10.05 at 50% came out 5.02 here and 5.03 on the server.
+  const cents = Math.round(price.price * 100);
+  const keep = Math.round((100 - percent) * 100);
+  const discounted = Math.floor((cents * keep + 5000) / 10000) / 100;
+  return {
+    price: discounted,
+    originalPrice: Math.max(price.originalPrice ?? 0, price.price),
+    offerPercent: percent
+  };
+}
+
+const GUID_PATTERN =/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 function silentOptions(silent: boolean) {
   return silent ? { context: new HttpContext().set(SILENT_REQUEST, true) } : {};
@@ -95,7 +117,7 @@ export class ProductRepositoryImpl implements IProductRepository {
   private mapOfferedProduct(p: any): Product | null {
     const price = this.visitorPrice(p);
     if (!price) return null;
-    return { ...this.mapProduct(p), price: price.price, originalPrice: price.originalPrice };
+    return { ...this.mapProduct(p), ...applyOffer(price, p.offerPercent), offerEndsAt: p.offerEndsAt ?? undefined };
   }
 
   private mapProduct(p: any): Product {

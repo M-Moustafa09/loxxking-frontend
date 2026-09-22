@@ -2322,3 +2322,14 @@
         height: 94px;
     }
 }
+
+/* No offer running now (the list comes from the «إدارة العروض» screen). */
+.lk-offers-section__empty {
+    margin: 12px 0 0;
+    padding: 28px 16px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.03);
+    color: #6b6b6b;
+    text-align: center;
+    font-size: 15px;
+}

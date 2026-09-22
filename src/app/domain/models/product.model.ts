@@ -32,6 +32,10 @@ export interface Product {
   aliases?: string[];
   /** Optional product video, shown on the product page after the images. */
   videoUrl?: string | null;
+  /** The running offer's discount (%), already taken off `price`; `originalPrice` is then the higher price before it. */
+  offerPercent?: number;
+  /** When the running offer ends (ISO, UTC). */
+  offerEndsAt?: string;
 }
 
 export interface Review {
