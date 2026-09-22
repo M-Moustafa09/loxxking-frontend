@@ -272,8 +272,12 @@
             </div>
           </section>
 
+          <p class="lk-checkout-country-block" *ngIf="!canOrderHere()" role="alert">
+            {{ 'CHECKOUT.NOT_AVAILABLE_IN_COUNTRY' | translate }}
+          </p>
+
           <ng-container *ngIf="paymentMethod() !== 'wallet'">
-            <button type="submit" class="lk-checkout-confirm-button">
+            <button type="submit" class="lk-checkout-confirm-button" [disabled]="!canOrderHere()">
               <lucide-icon name="lock-keyhole" aria-hidden="true"></lucide-icon>{{ 'COMMON.PLACEORDER' | translate }}</button>
 
             <p class="lk-checkout-terms">{{ 'STOREFRONT.AUTO_STR_50' | translate }} <a routerLink="/about">{{ 'STOREFRONT.AUTO_STR_249' | translate }}</a>

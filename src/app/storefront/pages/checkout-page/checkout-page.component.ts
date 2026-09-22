@@ -17,6 +17,7 @@ import { AuthService } from '../../../core/services/auth/auth.service';
 import { StoreLayoutComponent } from '../../../shared/components/layout/store-layout/store-layout.component';
 import { HomeHeaderComponent } from '../../../shared/components/layout/home-header/home-header.component';
 import { OrderRepositoryImpl } from '../../../data/repositories/order.repository.impl';
+import { ContextService } from '../../../core/services/context/context.service';
 
 type TrackedOrderGender = 'COMMON.MENS' | 'COMMON.WOMENS' | 'COMMON.UNISEX';
 type BankTransferReceipt = { name: string; type: string; dataUrl: string };
@@ -77,6 +78,14 @@ export class CheckoutPageComponent implements OnInit {
   router = inject(Router);
   route = inject(ActivatedRoute);
   private orderRepo = inject(OrderRepositoryImpl);
+  private context = inject(ContextService);
+
+  /**
+   * The order is placed in the visitor's country (read from their IP), at that country's prices
+   * (owner decision 2026-09-21). A visitor from outside the store's 16 countries browses in USD
+   * but cannot order: the CRM and its couriers only serve those countries.
+   */
+  readonly canOrderHere = computed(() => !!this.context.currentCountryId());
 
   CHECKOUT_CITY_OPTIONS = CHECKOUT_CITY_OPTIONS;
   CHECKOUT_AREA_OPTIONS = CHECKOUT_AREA_OPTIONS;
@@ -190,6 +199,10 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   async handleSubmit() {
+    if (!this.canOrderHere()) {
+      this.toastService.showToast('CHECKOUT.NOT_AVAILABLE_IN_COUNTRY', 'info');
+      return;
+    }
     if (this.paymentMethod() === 'wallet') {
       this.startWalletPayment();
       return;
@@ -225,7 +238,8 @@ export class CheckoutPageComponent implements OnInit {
       area: this.area(),
       address: this.address().trim(),
       paymentMethod: this.paymentMethod() === 'bank' ? 'تحويل بنكي' : 'الدفع عند الاستلام',
-      country: this.country(),
+      country: this.context.currentCountry(),
+      countryId: this.context.currentCountryId(),
       deliveryCompany: 'Loxxking Express',
       estimatedDelivery: '',
       notes: this.notes().trim()
@@ -246,10 +260,7 @@ export class CheckoutPageComponent implements OnInit {
             this.cartService.clearCart();
             this.router.navigate(['/orders']);
           },
-          error: (err) => {
-            console.error('Order creation failed:', err);
-            this.toastService.showToast('ERROR.SERVER_ERROR', 'error');
-          }
+          error: (err) => this.reportOrderFailure(err)
         });
       };
       reader.readAsDataURL(file);
@@ -262,11 +273,15 @@ export class CheckoutPageComponent implements OnInit {
         this.cartService.clearCart();
         this.router.navigate(['/orders']);
       },
-      error: (err) => {
-        console.error('Order creation failed:', err);
-        this.toastService.showToast('ERROR.SERVER_ERROR', 'error');
-      }
+      error: (err) => this.reportOrderFailure(err)
     });
+  }
+
+  /** The server's own reason when it gives one (e.g. a product not sold in this country). */
+  private reportOrderFailure(err: any): void {
+    console.error('Order creation failed:', err);
+    const reason = err?.error?.message || err?.error?.errors?.[0];
+    this.toastService.showToast(typeof reason === 'string' && reason ? reason : 'ERROR.SERVER_ERROR', 'error');
   }
 
   onBankReceiptChange(event: any) {
