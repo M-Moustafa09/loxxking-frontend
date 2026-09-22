@@ -89,6 +89,8 @@ export class OrderRepositoryImpl implements IOrderRepository {
 
       const payload = {
         address: order.address,
+        city: order.city || null,
+        area: order.area || null,
         phone: order.phone,
         notes: order.notes,
         paymentMethod: isBank ? 2 : 1, // 1: COD, 2: BankTransfer

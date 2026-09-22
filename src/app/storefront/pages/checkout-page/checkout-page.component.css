@@ -330,6 +330,53 @@
         margin-bottom: 10px;
     }
 
+/* City field: its caption is a <label for> (the list sits outside it), styled like the others. */
+.lk-checkout-city {
+    position: relative;
+}
+
+    .lk-checkout-city > label {
+        color: #111216;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+.lk-checkout-city__list {
+    position: absolute;
+    top: 100%;
+    inset-inline: 0;
+    z-index: 30;
+    max-height: 264px;
+    margin: 4px 0 0;
+    padding: 5px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+    background: #fff;
+    border: 1px solid var(--lk-checkout-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(17, 18, 22, .12);
+}
+
+.lk-checkout-city__option {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 12px;
+    color: var(--lk-checkout-text);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    .lk-checkout-city__option:hover,
+    .lk-checkout-city__option.is-active {
+        color: var(--lk-checkout-accent-dark);
+        background: rgba(43, 169, 212, .09);
+    }
+
 .lk-checkout-field__textarea {
     min-height: 68px;
     padding: 9px 12px;

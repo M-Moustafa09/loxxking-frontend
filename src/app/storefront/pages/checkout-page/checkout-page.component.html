@@ -72,27 +72,62 @@
             </label>
 
             <div class="lk-checkout-field-grid">
-              <label class="lk-checkout-field">
-                <span>{{ 'DASHBOARD.AUTO_STR_393' | translate }}</span>
-                <div class="lk-checkout-field__input is-select">
-                  <lucide-icon name="map" aria-hidden="true"></lucide-icon>
-                  <select [(ngModel)]="area" name="area">
-                    <option value="">{{ 'STOREFRONT.AUTO_STR_331' | translate }}</option>
-                    <option *ngIf="area() && !CHECKOUT_AREA_OPTIONS.includes(area())" [value]="area()">{{ area() }}</option>
-                    <option *ngFor="let option of CHECKOUT_AREA_OPTIONS" [value]="option">{{ option | translate }}</option>
-                  </select>
+              <div class="lk-checkout-field lk-checkout-city">
+                <label for="lk-checkout-city-input">{{ 'CHECKOUT.CITY' | translate }}<b class="lk-checkout-required">*</b></label>
+                <div class="lk-checkout-field__input">
+                  <lucide-icon name="map-pin" aria-hidden="true"></lucide-icon>
+                  <input
+                    id="lk-checkout-city-input"
+                    type="text"
+                    [ngModel]="city()"
+                    (ngModelChange)="onCityTyped($event)"
+                    name="city"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="lk-checkout-city-list"
+                    [attr.aria-expanded]="showCityList()"
+                    [attr.aria-activedescendant]="activeCityIndex() >= 0 ? 'lk-checkout-city-' + activeCityIndex() : null"
+                    [placeholder]="'CHECKOUT.CITY_PLACEHOLDER' | translate"
+                    required
+                    maxlength="100"
+                    autocomplete="off"
+                    (focus)="cityListOpen.set(true)"
+                    (blur)="cityListOpen.set(false)"
+                    (keydown)="onCityKeydown($event)"
+                  />
                 </div>
-              </label>
+                <ul
+                  *ngIf="showCityList()"
+                  id="lk-checkout-city-list"
+                  class="lk-checkout-city__list"
+                  role="listbox"
+                >
+                  <li
+                    *ngFor="let suggestion of filteredCities(); let i = index"
+                    [id]="'lk-checkout-city-' + i"
+                    class="lk-checkout-city__option"
+                    [class.is-active]="i === activeCityIndex()"
+                    role="option"
+                    [attr.aria-selected]="i === activeCityIndex()"
+                    (mousedown)="$event.preventDefault(); pickCity(suggestion)"
+                  >
+                    {{ suggestion }}
+                  </li>
+                </ul>
+              </div>
 
               <label class="lk-checkout-field">
-                <span>{{ 'CHECKOUT.CITY' | translate }}</span>
-                <div class="lk-checkout-field__input is-select">
-                  <lucide-icon name="map-pin" aria-hidden="true"></lucide-icon>
-                  <select [(ngModel)]="city" name="city">
-                    <option value="">{{ 'STOREFRONT.AUTO_STR_330' | translate }}</option>
-                    <option *ngIf="city() && !CHECKOUT_CITY_OPTIONS.includes(city())" [value]="city()">{{ city() }}</option>
-                    <option *ngFor="let option of CHECKOUT_CITY_OPTIONS" [value]="option">{{ option | translate }}</option>
-                  </select>
+                <span>{{ 'DASHBOARD.AUTO_STR_393' | translate }}</span>
+                <div class="lk-checkout-field__input">
+                  <lucide-icon name="map" aria-hidden="true"></lucide-icon>
+                  <input
+                    type="text"
+                    [(ngModel)]="area"
+                    name="area"
+                    [placeholder]="'CHECKOUT.AREA_PLACEHOLDER' | translate"
+                    maxlength="100"
+                    autocomplete="address-level3"
+                  />
                 </div>
               </label>
             </div>
