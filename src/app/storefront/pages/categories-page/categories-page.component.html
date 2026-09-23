@@ -14,30 +14,35 @@
     </header>
 
     <section class="lk-categories-grid" *ngIf="pageConfig().showCategories !== false" aria-label='STOREFRONT.AUTO_STR_224'>
-      <a *ngFor="let category of getStoreCategories(); let i = index"
-         [routerLink]="category.path"
+      <a *ngFor="let category of categories(); let i = index; trackBy: trackById"
+         [routerLink]="getCategoryPath(category)"
          class="lk-category-showcase-card"
          [ngStyle]="{'--lk-category-delay': (i * 70) + 'ms'}"
-         [attr.aria-label]="(langService.storefrontLang() === 'ar' ? 'عرض منتجات ' : 'View products for ') + (category.title | localize: category.titleAr : category.titleEn) + ' ' + (category.accent | localize: category.accentAr : category.accentEn)">
-        
+         [attr.aria-label]="(langService.storefrontLang() === 'ar' ? 'عرض منتجات ' : 'View products for ') + getCategoryLabel(category)">
+
         <div class="lk-category-showcase-card__image">
-          <img [src]="category.image"
-               [alt]="category.imageAlt | translate"
+          <img *ngIf="category.image; else noImage"
+               [src]="category.image"
+               [alt]="getCategoryLabel(category)"
                [loading]="i < 2 ? 'eager' : 'lazy'"
-               decoding="async"
-               [ngStyle]="{'object-position': category.imagePosition}" />
+               decoding="async" />
+          <!-- A category saved without a picture shows the store logo, not someone else's photo. -->
+          <ng-template #noImage>
+            <span class="lk-category-showcase-card__placeholder">
+              <img src="/assets/home/logo-header.png" alt="" aria-hidden="true" />
+            </span>
+          </ng-template>
         </div>
 
         <div class="lk-category-showcase-card__content">
           <h2>
-            <span>{{category.title | localize: category.titleAr : category.titleEn}}</span>
-            <strong>{{category.accent | localize: category.accentAr : category.accentEn}}</strong>
+            <strong dir="auto">{{ getCategoryLabel(category) }}</strong>
           </h2>
 
           <i aria-hidden="true"></i>
 
           <p>
-            <span>{{category.description | localize: category.descriptionAr : category.descriptionEn}}</span>
+            <span dir="auto">{{ getProductCountLabel(category) }}</span>
           </p>
 
           <span class="lk-category-showcase-card__arrow" aria-hidden="true">
@@ -46,5 +51,9 @@
         </div>
       </a>
     </section>
+
+    <p class="lk-categories-empty" *ngIf="pageConfig().showCategories !== false && loaded() && categories().length === 0">
+      {{ langService.storefrontLang() === 'ar' ? 'لا توجد أقسام بعد.' : 'No categories yet.' }}
+    </p>
   </main>
 </app-store-layout>

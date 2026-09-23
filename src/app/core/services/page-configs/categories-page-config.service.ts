@@ -4,20 +4,10 @@ import { Injectable, signal, effect, inject, NgZone } from '@angular/core';
 
 
 
-export interface CategoryCardConfig {
-    id: string;
-    title: string;
-    titleAr?: string;
-    titleEn?: string;
-    accent: string;
-    accentAr?: string;
-    accentEn?: string;
-    description: string;
-    descriptionAr?: string;
-    descriptionEn?: string;
-    path: string;
-}
-
+/**
+ * The categories page's own text and visibility. The cards themselves are the store's real categories
+ * («إدارة الأقسام»); any card list still saved in an old config is ignored.
+ */
 export interface CategoriesPageConfig {
     showTitle: boolean;
     headerTitle: string;
@@ -27,7 +17,6 @@ export interface CategoriesPageConfig {
     headerSubtitleAr?: string;
     headerSubtitleEn?: string;
     showCategories: boolean;
-    categories: CategoryCardConfig[];
 }
 
 
@@ -35,15 +24,7 @@ const initialConfig: CategoriesPageConfig = {
     showTitle: true,
     headerTitle: 'التصنيفات',
     headerSubtitle: 'تصفح جميع المنتجات حسب الفئة',
-    showCategories: true,
-    categories: [
-        { id: 'men', title: 'مشدات', accent: 'رجالية', description: 'دعم مثالي وثقة\nطوال اليوم', path: '/all-shapers?type=men' },
-        { id: 'women', title: 'مشدات', accent: 'نسائية', description: 'تصاميم أنثوية\nلإطلالة مثالية', path: '/all-shapers?type=women' },
-        { id: 'postpartum', title: 'مشدات بعد', accent: 'الولادة', description: 'راحة ودعم بعد\nفترة الحمل', path: '/all-shapers?type=postpartum' },
-        { id: 'sport', title: 'مشدات', accent: 'رياضية', description: 'حرية الحركة\nوأداء أفضل', path: '/all-shapers?type=sport' },
-        { id: 'full-body', title: 'مشد كامل', accent: 'الجسم', description: 'تنسيق شامل\nلجسم مثالي', path: '/all-shapers?type=full-body' },
-        { id: 'waist', title: 'مشدات', accent: 'الخصر', description: 'خصر أنحف\nوإطلالة جذابة', path: '/all-shapers?type=waist' }
-    ]
+    showCategories: true
 }
 
 @Injectable({

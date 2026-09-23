@@ -6,13 +6,20 @@ import { StoreLayoutComponent } from '../../../shared/components/layout/store-la
 import { HomeHeaderComponent } from '../../../shared/components/layout/home-header/home-header.component';
 import { LucideAngularModule, ChevronLeft, ArrowRight } from 'lucide-angular';
 
-import { TranslateService } from '@ngx-translate/core';
 import { LangService } from '../../../core/services/lang/lang.service';
 import { LocalizeFieldPipe } from '../../../shared/pipes/localize-field.pipe';
 import { CategoriesPageConfigService } from '../../../core/services/page-configs/categories-page-config.service';
+import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { Category } from '../../../domain/models/category.model';
 
-
-
+/**
+ * «التصنيفات» shows the store's real categories — the ones managed in «إدارة الأقسام».
+ *
+ * It used to show six shaper tiles typed into the code (men / women / postpartum / sport / full body /
+ * waist) with bundled images. None of them was a real category, and each linked to
+ * `/all-shapers?type=…`, which filters on a field products do not have, so every tile listed every
+ * product. Each card now opens that category's own page, like the home page's «تسوق حسب الفئة».
+ */
 @Component({
   selector: 'app-categories-page',
   standalone: true,
@@ -27,27 +34,43 @@ export class CategoriesPageComponent {
   readonly ChevronLeft = ChevronLeft;
   readonly ArrowRight = ArrowRight;
   readonly langService = inject(LangService);
-  private translate = inject(TranslateService);
+  private productRepo = inject(ProductRepositoryImpl);
 
-  getStoreCategories() {
-    const config = this.pageConfig();
-    const images: Record<string, { image: string, imageAlt: string, imagePosition?: string }> = {
-      'men': { image: '/assets/categories/category-men-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_102', imagePosition: 'center center' },
-      'women': { image: '/assets/categories/category-women-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_88', imagePosition: 'center center' },
-      'postpartum': { image: '/assets/categories/category-postpartum-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_72', imagePosition: 'center center' },
-      'sport': { image: '/assets/categories/category-sport-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_89', imagePosition: 'center center' },
-      'full-body': { image: '/assets/categories/category-full-body-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_90', imagePosition: 'center center' },
-      'waist': { image: '/assets/categories/category-waist-reference.png', imageAlt: 'STOREFRONT.AUTO_STR_420', imagePosition: 'center top' }
-    };
+  readonly categories = signal<Category[]>([]);
+  readonly loaded = signal(false);
 
-    return config.categories.map(cat => ({
-      ...cat,
-      ...(images[cat.id] || { image: '', imageAlt: '' })
-    }));
+  constructor() {
+    this.productRepo.getCategories().subscribe(cats => {
+      this.categories.set(cats ?? []);
+      this.loaded.set(true);
+    });
   }
 
-  splitDescription(desc: string): string[] {
-    const text = this.translate.instant(desc);
-    return (text || desc || '').split('\n');
+  /** The category page's route is `category/:slug`. */
+  getCategoryPath(category: Category): string {
+    return `/category/${category.slug || category.id}`;
+  }
+
+  getCategoryLabel(category: Category): string {
+    const isAr = this.langService.storefrontLang() === 'ar';
+    return isAr
+      ? (category.nameAr || category.nameEn || '')
+      : (category.nameEn || category.nameAr || '');
+  }
+
+  getProductCountLabel(category: Category): string {
+    const count = category.productCount ?? 0;
+    if (this.langService.storefrontLang() !== 'ar') {
+      if (count === 0) return 'No products yet';
+      return count === 1 ? '1 product' : `${count} products`;
+    }
+    if (count === 0) return 'لا توجد منتجات بعد';
+    if (count === 1) return 'منتج واحد';
+    if (count === 2) return 'منتجان';
+    return count <= 10 ? `${count} منتجات` : `${count} منتج`;
+  }
+
+  trackById(_: number, category: Category): string {
+    return category.id;
   }
 }
