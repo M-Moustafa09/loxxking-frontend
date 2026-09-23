@@ -4,13 +4,14 @@ import { Component, inject} from '@angular/core';
 import { BilingualInputComponent } from '../components/bilingual-input/bilingual-input.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CategoriesPageConfigService, CategoriesPageConfig } from '../../../../core/services/page-configs/categories-page-config.service';
 import { getEnglishTranslation } from '../../../../core/utils/config-sanitizer';
 
 @Component({
   selector: 'app-categories-page-editor',
   standalone: true,
-  imports: [TranslatePipe, TranslateDirective, CommonModule, FormsModule, SectionCardComponent, BilingualInputComponent],
+  imports: [TranslatePipe, TranslateDirective, CommonModule, FormsModule, SectionCardComponent, BilingualInputComponent, RouterLink],
   
   template: `
     <div class="w-full flex flex-col gap-2 pb-24" dir="rtl">
@@ -61,53 +62,10 @@ import { getEnglishTranslation } from '../../../../core/utils/config-sanitizer';
             (onDragOver)="noop()"
             (onDrop)="noop()">
             
-            <div class="flex flex-col gap-3">
-                <div *ngFor="let cat of config().categories; let idx = index; trackBy: trackByIndex" class="flex gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                    <div class="flex flex-col gap-2 flex-1">
-                        <div class="text-xs font-bold text-gray-500">التصنيف: {{cat.id}}</div>
-                        <div class="grid grid-cols-2 gap-2" dir="rtl">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-right">العنوان الأول (عربي)</span>
-                                <input type="text" dir="rtl" class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1 text-right" 
-                                       [ngModel]="cat.titleAr" (ngModelChange)="updateCategory(idx, { titleAr: $event })" />
-                            </div>
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-left">Title (EN)</span>
-                                <input type="text" dir="ltr" class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1 text-left" 
-                                       [ngModel]="cat.titleEn" (ngModelChange)="updateCategory(idx, { titleEn: $event })" />
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2" dir="rtl">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-right">الكلمة المميزة (عربي)</span>
-                                <input type="text" dir="rtl" class="w-full text-sm font-bold bg-white border border-gray-200 rounded-md px-2 py-1 text-blue-600 text-right" 
-                                       [ngModel]="cat.accentAr" (ngModelChange)="updateCategory(idx, { accentAr: $event })" />
-                            </div>
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-left">Accent (EN)</span>
-                                <input type="text" dir="ltr" class="w-full text-sm font-bold bg-white border border-gray-200 rounded-md px-2 py-1 text-blue-600 text-left" 
-                                       [ngModel]="cat.accentEn" (ngModelChange)="updateCategory(idx, { accentEn: $event })" />
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2" dir="rtl">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-right">الوصف (عربي)</span>
-                                <textarea class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1 text-right" 
-                                          [ngModel]="cat.descriptionAr" (ngModelChange)="updateCategory(idx, { descriptionAr: $event })" rows="2" dir="rtl"></textarea>
-                            </div>
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-500 mb-1 block text-left">Description (EN)</span>
-                                <textarea class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1 text-left" 
-                                          [ngModel]="cat.descriptionEn" (ngModelChange)="updateCategory(idx, { descriptionEn: $event })" rows="2" dir="ltr"></textarea>
-                            </div>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-gray-500 mb-1 block">الرابط</span>
-                            <input type="text" class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1" 
-                                   [ngModel]="cat.path" (ngModelChange)="updateCategory(idx, { path: $event })" dir="ltr" />
-                        </div>
-                    </div>
-                </div>
+            <!-- The cards are the store's real categories; they are no longer edited here. -->
+            <div class="px-3 py-2.5 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 font-medium flex items-center justify-between gap-3">
+                <span>هذه الصفحة تعرض أقسام المتجر الحقيقية تلقائياً. لإضافة قسم أو تعديل اسمه وصورته استخدم «إدارة الأقسام».</span>
+                <a routerLink="/admin/categories" class="flex-shrink-0 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-md font-bold hover:bg-blue-100">إدارة الأقسام</a>
             </div>
         </app-section-card>
         
@@ -141,39 +99,6 @@ export class CategoriesPageEditorComponent {
       }
     }
     
-    if (c.categories && c.categories.length > 0) {
-      const newCats = c.categories.map((cat: any) => {
-        let catChanged = false;
-        if (cat.title && !cat.titleAr) {
-          cat.titleAr = cat.title;
-          catChanged = true;
-        }
-        if (!cat.titleEn || ARABIC_REGEX.test(cat.titleEn)) {
-          cat.titleEn = getEnglishTranslation(cat.titleAr || cat.title, 'Category');
-          catChanged = true;
-        }
-        if (cat.accent && !cat.accentAr) {
-          cat.accentAr = cat.accent;
-          catChanged = true;
-        }
-        if (!cat.accentEn || ARABIC_REGEX.test(cat.accentEn)) {
-          cat.accentEn = getEnglishTranslation(cat.accentAr || cat.accent, 'Collection');
-          catChanged = true;
-        }
-        if (cat.description && !cat.descriptionAr) {
-          cat.descriptionAr = cat.description;
-          catChanged = true;
-        }
-        if (!cat.descriptionEn || ARABIC_REGEX.test(cat.descriptionEn)) {
-          cat.descriptionEn = getEnglishTranslation(cat.descriptionAr || cat.description, 'Explore our curated collection');
-          catChanged = true;
-        }
-        if (catChanged) changed = true;
-        return cat;
-      });
-      c.categories = newCats;
-    }
-
     if (changed) {
       this.configService.updateConfig(c);
     }
@@ -183,36 +108,11 @@ export class CategoriesPageEditorComponent {
     this.configService.updateConfig({ ...this.config(), ...updates });
   }
 
-  updateCategory(index: number, updates: any) {
-    const cats = [...(this.config().categories || [])];
-    const old = cats[index];
-    const newVal = { ...old, ...updates };
-    
-    // For Ar/En updates, preserve the main field as the fallback.
-    // E.g. if titleAr is updated, set title to titleEn || titleAr
-    if (updates.titleAr !== undefined || updates.titleEn !== undefined) {
-      newVal.title = newVal.titleEn || newVal.titleAr;
-    }
-    if (updates.accentAr !== undefined || updates.accentEn !== undefined) {
-      newVal.accent = newVal.accentEn || newVal.accentAr;
-    }
-    if (updates.descriptionAr !== undefined || updates.descriptionEn !== undefined) {
-      newVal.description = newVal.descriptionEn || newVal.descriptionAr;
-    }
-    
-    cats[index] = newVal;
-    this.updateConfig({ categories: cats });
-  }
-
   updateBilingualField(field: string, lang: 'Ar' | 'En', value: string) {
     const current = { ...this.config() } as any;
     current[field + lang] = value;
     current[field] = current[field + 'En'] || current[field + 'Ar'];
     this.updateConfig(current);
-  }
-
-  trackByIndex(index: number, item: any): number {
-    return index;
   }
 
   noop() {}
