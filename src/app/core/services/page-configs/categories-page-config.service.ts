@@ -23,7 +23,11 @@ export interface CategoriesPageConfig {
 const initialConfig: CategoriesPageConfig = {
     showTitle: true,
     headerTitle: 'التصنيفات',
+    headerTitleAr: 'التصنيفات',
+    headerTitleEn: 'Categories',
     headerSubtitle: 'تصفح جميع المنتجات حسب الفئة',
+    headerSubtitleAr: 'تصفح جميع المنتجات حسب الفئة',
+    headerSubtitleEn: 'Browse all products by category',
     showCategories: true
 }
 

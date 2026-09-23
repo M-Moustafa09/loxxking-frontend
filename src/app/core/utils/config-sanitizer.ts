@@ -287,6 +287,7 @@ export const AR_TO_EN_MAP: Record<string, string> = {
 
   // Categories Page
   'التصنيفات': 'Categories',
+  'تصفح جميع المنتجات حسب الفئة': 'Browse all products by category',
   'تسوق حسب القسم': 'Shop by Department',
 
   // Offers Page

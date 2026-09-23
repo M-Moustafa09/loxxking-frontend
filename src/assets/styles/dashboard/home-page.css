@@ -436,6 +436,11 @@
         transform: none;
     }
 
+    .lk-category-card__image img.lk-category-card__logo {
+        max-width: 60%;
+        opacity: .35;
+    }
+
 .lk-category-card strong {
     display: grid;
     min-height: 42px;
