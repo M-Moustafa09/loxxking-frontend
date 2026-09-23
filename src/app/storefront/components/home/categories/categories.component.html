@@ -18,14 +18,19 @@
     @for (category of displayCategories; track category.id || $index) {
       <a [routerLink]="getCategoryPath(category)" class="lk-category-card">
         <span class="lk-category-card__image">
-          <img
-            [src]="category.image || '/assets/home/category-full.png'"
-            [alt]="getCategoryLabel(category)"
-            width="900"
-            height="520"
-            loading="lazy"
-            decoding="async"
-          />
+          @if (category.image) {
+            <img
+              [src]="category.image"
+              [alt]="getCategoryLabel(category)"
+              width="900"
+              height="520"
+              loading="lazy"
+              decoding="async"
+            />
+          } @else {
+            <!-- A category saved without a picture shows the store logo; the old fallback file did not exist. -->
+            <img class="lk-category-card__logo" src="/assets/home/logo-header.png" alt="" aria-hidden="true" />
+          }
         </span>
         <strong>{{ getCategoryLabel(category) }}</strong>
       </a>
