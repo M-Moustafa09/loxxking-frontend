@@ -9,6 +9,13 @@ import { environment } from '../../../environments/environment';
 
 const STORAGE_KEY = `${environment.storagePrefix}completed-orders`;
 
+/**
+ * The server's PaymentMethod enum values (CreditCard 0, DebitCard 1, BankTransfer 2,
+ * CashOnDelivery 3). Cash on delivery used to be sent as 1 — DebitCard — so every cash order was
+ * saved and sent to the CRM as a card payment.
+ */
+const PAYMENT_METHOD = { BankTransfer: 2, CashOnDelivery: 3 } as const;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,7 +36,10 @@ export class OrderRepositoryImpl implements IOrderRepository {
               createdAt: o.createdAt,
               updatedAt: o.createdAt,
               status: o.status,
-              paymentStatus: o.paymentStatus === 'Paid' ? 'paid' : (isBank ? 'unpaid' : (o.paymentMethod === 'CashOnDelivery' ? 'unpaid' : 'paid')),
+              // Paid only when the store says so: every order is cash on delivery or a bank transfer
+              // awaiting review. Guessing from the method showed cash orders (saved as DebitCard
+              // until 2026-09-24) as paid.
+              paymentStatus: o.paymentStatus === 'Paid' ? 'paid' : 'unpaid',
               items: (o.items || []).map((i: any) => ({
                 productId: i.productId,
                 quantity: i.quantity,
@@ -93,7 +103,7 @@ export class OrderRepositoryImpl implements IOrderRepository {
         area: order.area || null,
         phone: order.phone,
         notes: order.notes,
-        paymentMethod: isBank ? 2 : 1, // 1: COD, 2: BankTransfer
+        paymentMethod: isBank ? PAYMENT_METHOD.BankTransfer : PAYMENT_METHOD.CashOnDelivery,
         items: (order.items && order.items.length > 0 ? order.items : [{ productId: DEFAULT_PRODUCT_ID, quantity: 1 }]).map(i => ({
           productId: isGuid(i.productId) ? i.productId : DEFAULT_PRODUCT_ID,
           quantity: i.quantity || 1
