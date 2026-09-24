@@ -10,7 +10,6 @@ import { AdminProductsService } from '../../../core/services/products/admin-prod
 import {
   AdminOffer,
   AdminOffersService,
-  OfferBanner,
   OfferFormValue
 } from '../../../core/services/offers/admin-offers.service';
 
@@ -28,7 +27,6 @@ interface OfferForm {
  * «إدارة العروض» (owner decisions 2026-09-22): a percentage off one product for a period. The
  * discount is taken off the product's price in each country, shows everywhere in the store and is
  * charged at checkout. A product has one offer at a time; the server refuses an overlapping period.
- * The screen also sets the texts of the home page's offer banner («خصم حتى 30%»).
  */
 @Component({
   selector: 'app-admin-offers-page',
@@ -64,11 +62,6 @@ export class OffersPageComponent implements OnInit {
   form: OfferForm = this.emptyForm();
   formError = signal('');
 
-  /** null = the home page has no offer banner section. */
-  banner = signal<OfferBanner | null>(null);
-  bannerLoaded = signal(false);
-  isSavingBanner = signal(false);
-
   readonly visibleOffers = computed(() => {
     const term = this.search().trim().toLowerCase();
     const all = this.offers();
@@ -85,13 +78,6 @@ export class OffersPageComponent implements OnInit {
     this.loadOffers();
     this.productsService.fetchProducts().subscribe({
       error: () => this.toast.show('تعذر تحميل المنتجات', 'error')
-    });
-    this.offersService.fetchBanner().subscribe({
-      next: banner => {
-        this.banner.set(banner);
-        this.bannerLoaded.set(true);
-      },
-      error: () => this.bannerLoaded.set(true)
     });
   }
 
@@ -205,23 +191,6 @@ export class OffersPageComponent implements OnInit {
         this.isSaving.set(false);
         this.deleting.set(null);
         this.toast.show(serverMessage(err) || 'تعذر حذف العرض', 'error');
-      }
-    });
-  }
-
-  saveBanner(): void {
-    const banner = this.banner();
-    if (!banner) return;
-
-    this.isSavingBanner.set(true);
-    this.offersService.saveBanner(banner).subscribe({
-      next: () => {
-        this.isSavingBanner.set(false);
-        this.toast.show('تم حفظ بانر الصفحة الرئيسية', 'success');
-      },
-      error: (err: any) => {
-        this.isSavingBanner.set(false);
-        this.toast.show(err?.message && !err?.status ? err.message : 'تعذر حفظ البانر', 'error');
       }
     });
   }
