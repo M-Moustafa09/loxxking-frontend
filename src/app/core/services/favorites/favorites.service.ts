@@ -44,7 +44,8 @@ export class FavoritesService {
     const current = this.favoriteIdsSignal();
     const exists = current.includes(productId);
     
-    this.favoriteIdsSignal.set(exists ? current.filter(id => id !== productId) : [...current, productId]);
+    // Newest first, as the server lists them.
+    this.favoriteIdsSignal.set(exists ? current.filter(id => id !== productId) : [productId, ...current]);
 
     if (exists) {
       this.http.delete<any>(`${environment.apiBaseUrl}/favorites/${productId}`, { headers: this.getHeaders() }).subscribe({
