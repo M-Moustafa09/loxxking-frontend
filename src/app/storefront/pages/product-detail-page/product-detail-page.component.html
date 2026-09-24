@@ -167,7 +167,7 @@
                             <lucide-icon name="minus" [img]="Minus" aria-hidden="true"></lucide-icon>
                         </button>
                         <span>{{quantity()}}</span>
-                        <button type="button" (click)="quantity.set(product!.stock > quantity() ? quantity() + 1 : quantity())" aria-label='STOREFRONT.AUTO_STR_327'>
+                        <button type="button" (click)="quantity.set(quantity() + 1)" aria-label='STOREFRONT.AUTO_STR_327'>
                             <lucide-icon name="plus" [img]="Plus" aria-hidden="true"></lucide-icon>
                         </button>
                     </div>
