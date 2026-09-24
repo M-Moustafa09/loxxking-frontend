@@ -30,51 +30,6 @@
     </div>
 
     <div class="p-4 lg:p-6 overflow-y-auto flex flex-col gap-4">
-      <!-- Home page banner («خصم حتى 30%») -->
-      <section class="rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
-        <h2 class="text-base font-black text-gray-900">{{ 'ADMIN_OFFERS.BANNER_TITLE' | translate }}</h2>
-        <p class="text-sm text-gray-500 mb-3">{{ 'ADMIN_OFFERS.BANNER_SUBTITLE' | translate }}</p>
-
-        <p *ngIf="bannerLoaded() && !banner()" class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          {{ 'ADMIN_OFFERS.BANNER_MISSING' | translate }}
-        </p>
-
-        <ng-container *ngIf="banner() as b">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <label class="lk-products-field">
-              <span>{{ 'ADMIN_OFFERS.BANNER_PERCENT' | translate }}</span>
-              <input type="text" [(ngModel)]="b.percent" name="bannerPercent" placeholder="30%" dir="ltr" />
-            </label>
-            <label class="lk-products-field">
-              <span>{{ 'ADMIN_OFFERS.BANNER_LEAD' | translate }} (AR)</span>
-              <input type="text" [(ngModel)]="b.leadAr" name="bannerLeadAr" placeholder="خصم حتى" />
-            </label>
-            <label class="lk-products-field">
-              <span>{{ 'ADMIN_OFFERS.BANNER_LEAD' | translate }} (EN)</span>
-              <input type="text" [(ngModel)]="b.leadEn" name="bannerLeadEn" placeholder="Discount up to" dir="ltr" />
-            </label>
-            <label class="lk-products-field">
-              <span>{{ 'ADMIN_OFFERS.BANNER_HEADLINE' | translate }} (AR)</span>
-              <input type="text" [(ngModel)]="b.titleAr" name="bannerTitleAr" placeholder="على مجموعة مختارة" />
-            </label>
-            <label class="lk-products-field">
-              <span>{{ 'ADMIN_OFFERS.BANNER_HEADLINE' | translate }} (EN)</span>
-              <input type="text" [(ngModel)]="b.titleEn" name="bannerTitleEn" placeholder="On selected collection" dir="ltr" />
-            </label>
-          </div>
-          <div class="flex items-center gap-3 mt-3">
-            <button
-              type="button"
-              (click)="saveBanner()"
-              [disabled]="isSavingBanner()"
-              class="px-5 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
-              {{ (isSavingBanner() ? 'ADMIN_OFFERS.SAVING' : 'ADMIN_OFFERS.BANNER_SAVE') | translate }}
-            </button>
-            <small class="lk-products-hint">{{ 'ADMIN_OFFERS.BANNER_HINT' | translate }}</small>
-          </div>
-        </ng-container>
-      </section>
-
       <!-- Offers list -->
       <div class="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
         <p *ngIf="isLoading()" class="p-8 text-center text-sm text-gray-500">

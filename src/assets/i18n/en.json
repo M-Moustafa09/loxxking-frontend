@@ -1809,15 +1809,7 @@
     "SAVE": "Save",
     "SAVING": "Saving...",
     "DELETE_TITLE": "Delete offer",
-    "DELETE_CONFIRM": "Delete the offer on",
-    "BANNER_TITLE": "Home page offer banner",
-    "BANNER_SUBTITLE": "The texts on the home page «Discount up to» banner",
-    "BANNER_PERCENT": "Big figure",
-    "BANNER_LEAD": "Small text",
-    "BANNER_HEADLINE": "Headline",
-    "BANNER_SAVE": "Save banner",
-    "BANNER_HINT": "An empty field keeps the original text. The banner image changes in the store customizer.",
-    "BANNER_MISSING": "The home page has no offer banner. Add it first in the store customizer."
+    "DELETE_CONFIRM": "Delete the offer on"
   },
   "ADMIN_CATEGORIES": {
     "TITLE": "Categories",
