@@ -79,8 +79,8 @@
               }
 
               @if (pageConfig().showProductStock) {
-                <div [class]="item.product.stock > 0 ? 'lk-favorite-item__stock is-available' : 'lk-favorite-item__stock is-empty'">
-                  <span aria-hidden="true"></span>{{ (item.product.stock > 0 ? 'COMMON.INSTOCK' : 'STOREFRONT.AUTO_STR_366') | translate }}
+                <div class="lk-favorite-item__stock is-available">
+                  <span aria-hidden="true"></span>{{ 'COMMON.INSTOCK' | translate }}
                 </div>
               }
             </div>
@@ -96,7 +96,6 @@
               @if (pageConfig().showMoveToCartAction) {
                 <button type="button" class="lk-favorite-item__move"
                   (click)="addFavoriteToCart(item, true)"
-                  [disabled]="!(item.product.stock > 0)"
                 >{{ 'STOREFRONT.AUTO_STR_303' | translate }}<lucide-icon [img]="ShoppingCart" aria-hidden="true"></lucide-icon>
                 </button>
               }
