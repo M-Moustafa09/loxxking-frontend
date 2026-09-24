@@ -47,7 +47,9 @@
       </section>
     }
 
-    @if (favoriteProducts().length > 0) {
+    @if (!loaded()) {
+      <!-- The products are loading: neither the list nor the empty state yet. -->
+    } @else if (favoriteProducts().length > 0) {
       <section class="lk-favorites-list" aria-label='STOREFRONT.AUTO_STR_210'>
         @for (item of favoriteProducts(); track item.product.id) {
           <article class="lk-favorite-item">
@@ -61,7 +63,7 @@
                 <h2>{{ item.nameAr | localize: item.nameAr : item.nameEn }}</h2>
               </a>
               <p>
-                @if (pageConfig().showProductColor) {
+                @if (pageConfig().showProductColor && item.color) {
                   {{ 'PRODUCT.COLOR' | translate }}: {{ item.color | translate }} <i aria-hidden="true"></i>
                 }
                 @if (pageConfig().showProductSize) {

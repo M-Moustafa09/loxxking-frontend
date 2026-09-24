@@ -1,28 +1,22 @@
 import { TranslatePipe, TranslateDirective } from '@ngx-translate/core';
-import { Component, computed, signal, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, computed, signal, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { StoreLayoutComponent } from '../../../shared/components/layout/store-layout/store-layout.component';
 import { HomeHeaderComponent } from '../../../shared/components/layout/home-header/home-header.component';
 import { LucideAngularModule, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Heart, RotateCcw, ShieldCheck, ShoppingCart, Trash2, Truck } from 'lucide-angular';
-import { sanitizeWithInitial } from '../../../core/utils/config-sanitizer';
 import { LangService } from '../../../core/services/lang/lang.service';
 import { CartService } from '../../../core/services/cart/cart.service';
 import { ToastService } from '../../../core/services/toast/toast.service';
+import { FavoritesService } from '../../../core/services/favorites/favorites.service';
+import { CatalogLiveService } from '../../../core/services/catalog-live/catalog-live.service';
+import { ProductRepositoryImpl } from '../../../data/repositories/product.repository.impl';
+import { Product } from '../../../domain/models/product.model';
 
 import { FavoritesPageConfigService } from '../../../core/services/page-configs/favorites-page-config.service';
-
-export interface Product {
-  id: string;
-  nameAr: string;
-  price: number;
-  originalPrice?: number;
-  images: string[];
-  sizes: string[];
-  category: string;
-  stock: number;
-}
+import { LocalizeFieldPipe } from '../../../shared/pipes/localize-field.pipe';
 
 export type SortMode = 'latest' | 'price-low' | 'price-high';
 
@@ -37,14 +31,11 @@ export type FavoriteProductDisplay = {
   size: string;
 }
 
-const dummyProducts: Product[] = [
-  { id: 'prod-1', nameAr: 'STOREFRONT.AUTO_STR_229', price: 299, originalPrice: 350, images: ['/assets/categories/category-women-reference.png'], sizes: ['S', 'M', 'L'], category: 'general', stock: 10 },
-  { id: 'prod-2', nameAr: 'STOREFRONT.AUTO_STR_423', price: 150, images: ['/assets/categories/category-waist-reference.png'], sizes: ['M', 'L'], category: 'postpartum', stock: 0 },
-];
-const homeProducts: any[] = [];
-const homeProductById = new Map(homeProducts.map(item => [item.productId, item]));
-import { LocalizeFieldPipe } from '../../../shared/pipes/localize-field.pipe';
-
+/**
+ * The visitor's own favorites: the ids the heart buttons saved (FavoritesService, per account or
+ * per guest id), shown with the product's current price for the visitor's country. It used to show
+ * two hard-coded demo products whatever the visitor had chosen.
+ */
 @Component({
   selector: 'app-favorites-page',
   standalone: true,
@@ -52,7 +43,7 @@ import { LocalizeFieldPipe } from '../../../shared/pipes/localize-field.pipe';
   templateUrl: './favorites-page.component.html',
   styleUrl: './favorites-page.component.css'
 })
-export class FavoritesPageComponent implements OnInit, OnDestroy {
+export class FavoritesPageComponent {
   readonly BadgeCheck = BadgeCheck;
   readonly ChevronDown = ChevronDown;
   readonly ChevronLeft = ChevronLeft;
@@ -66,40 +57,55 @@ export class FavoritesPageComponent implements OnInit, OnDestroy {
 
   public langService = inject(LangService);
   private configService = inject(FavoritesPageConfigService);
+  private favoritesService = inject(FavoritesService);
+  private productRepo = inject(ProductRepositoryImpl);
+  private cartService = inject(CartService);
+  private toastService = inject(ToastService);
   pageConfig = this.configService.pageConfig;
 
-  favoriteProductIds = signal<string[]>(['prod-1', 'prod-2']); // Initial dummy data
   sortMode = signal<SortMode>('latest');
-  
+
+  /** The store's products as the visitor sees them (their country's price, running offers). */
+  private products = signal<Product[]>([]);
+  /** The empty state waits for the products, so it does not flash before the list. */
+  loaded = signal(false);
+
   favoriteProducts = computed(() => {
-    const favoriteOrder = new Map(this.favoriteProductIds().map((productId, index) => [productId, index]));
-    const resolved = this.favoriteProductIds()
-      .map(productId => dummyProducts.find(product => product.id === productId))
+    const ids = this.favoritesService.favoriteProductIds().map(id => id.toLowerCase());
+    const order = new Map(ids.map((id, index) => [id, index]));
+    const byId = new Map(this.products().map(p => [p.id.toLowerCase(), p]));
+
+    // A favorite not sold in the visitor's country (or since removed) is not offered to them.
+    const resolved = ids
+      .map(id => byId.get(id))
       .filter((product): product is Product => Boolean(product))
-      .map(p => this.resolveFavoriteProduct(p));
+      .map(product => this.resolveFavoriteProduct(product));
 
     return resolved.sort((first, second) => {
       if (this.sortMode() === 'price-low') return first.price - second.price;
       if (this.sortMode() === 'price-high') return second.price - first.price;
-      return (favoriteOrder.get(second.product.id) ?? 0) - (favoriteOrder.get(first.product.id) ?? 0);
+      // The ids come newest first (the server orders them by when they were added).
+      return (order.get(first.product.id.toLowerCase()) ?? 0) - (order.get(second.product.id.toLowerCase()) ?? 0);
     });
   });
 
-  ngOnInit() {
+  constructor() {
+    this.productRepo.getProducts().pipe(takeUntilDestroyed()).subscribe(products => {
+      this.products.set(products);
+      this.loaded.set(true);
+    });
+    // A price, an offer or a product changed while the page is open: show it without a refresh.
+    inject(CatalogLiveService).reload(() => this.productRepo.getProducts(true))
+      .pipe(takeUntilDestroyed())
+      .subscribe(products => this.products.set(products));
   }
-
-  ngOnDestroy() {
-  }
-
-  private cartService = inject(CartService);
-  private toastService = inject(ToastService);
 
   removeFavorite(id: string) {
-    this.favoriteProductIds.update(ids => ids.filter(i => i !== id));
+    this.favoritesService.removeFavorite(id);
   }
 
   addToCart(product: Product, size: string) {
-    this.cartService.addToCart(product as any, size, 1);
+    this.cartService.addToCart(product, size, 1);
   }
 
   showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') {
@@ -123,25 +129,16 @@ export class FavoritesPageComponent implements OnInit, OnDestroy {
   }
 
   private resolveFavoriteProduct(product: Product): FavoriteProductDisplay {
-    const homeProduct = homeProductById.get(product.id);
-    const defaultSize = product.sizes[Math.floor(product.sizes.length / 2)] ?? product.sizes[0] ?? 'M';
-    const isBeige = product.category === 'postpartum' || product.id === 'prod-3' || product.id === 'prod-6';
-
+    const sizes = product.sizes ?? [];
     return {
-      product: {
-        ...product,
-        nameAr: homeProduct?.nameAr ?? product.nameAr,
-        price: homeProduct?.price ?? Math.round(product.price),
-        originalPrice: homeProduct?.oldPrice ?? product.originalPrice,
-        images: homeProduct?.image ? [homeProduct.image] : product.images,
-      },
-      nameAr: homeProduct?.nameAr ?? product.nameAr,
-      nameEn: homeProduct?.nameEn ?? product.nameAr, // product mock doesn't have nameEn
-      image: homeProduct?.image ?? product.images[0],
-      price: homeProduct?.price ?? Math.round(product.price),
-      oldPrice: homeProduct?.oldPrice ?? (product.originalPrice ? Math.round(product.originalPrice) : undefined),
-      color: isBeige ? 'STOREFRONT.AUTO_STR_483' : 'STOREFRONT.AUTO_STR_472',
-      size: defaultSize,
+      product,
+      nameAr: product.nameAr,
+      nameEn: product.nameEn || product.nameAr,
+      image: product.images?.[0] ?? '/assets/placeholder.png',
+      price: product.price,
+      oldPrice: product.originalPrice,
+      color: product.colors?.[0] ?? '',
+      size: sizes[Math.floor(sizes.length / 2)] ?? sizes[0] ?? 'M',
     };
   }
 }
