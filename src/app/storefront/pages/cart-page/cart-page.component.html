@@ -111,7 +111,7 @@
               <div><span>{{ 'COMMON.SUBTOTAL' | translate }}</span><strong>{{ subtotal() | number }} {{ 'COMMON.CURRENCY' | translate }}</strong></div>
             }
             @if (config().showShipping) {
-              <div><span>{{ 'DASHBOARD.AUTO_STR_354' | translate }}</span><strong>{{ shipping() | number }} {{ 'COMMON.CURRENCY' | translate }}</strong></div>
+              <div><span>{{ 'DASHBOARD.AUTO_STR_354' | translate }}</span><strong>—</strong></div>
             }
             @if (config().showDiscount) {
               <div class="is-discount"><span>{{ 'COMMON.DISCOUNT' | translate }}</span><strong>-{{ discount() | number }} {{ 'COMMON.CURRENCY' | translate }}</strong></div>
