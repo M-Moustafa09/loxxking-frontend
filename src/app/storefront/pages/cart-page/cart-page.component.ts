@@ -104,7 +104,9 @@ export class CartPageComponent {
     this.displayItems().reduce((sum, item) => sum + item.price * item.cartItem.quantity, 0)
   );
   
-  shipping = computed(() => this.displayItems().length > 0 ? 20 : 0);
+  // No delivery fee is charged at checkout (owner decision 2026-09-24): the order and the CRM carry
+  // the products' total only, so the old flat 20 made the shown total higher than the order's.
+  shipping = computed(() => 0);
   
   discount = computed(() => 
     this.appliedCoupon() === 'LOXX10' ? Math.round(this.subtotal() * 0.1) : 0
