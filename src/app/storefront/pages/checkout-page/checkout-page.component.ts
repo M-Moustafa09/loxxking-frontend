@@ -263,6 +263,9 @@ export class CheckoutPageComponent implements OnInit {
   isWalletPaymentFlow = signal(false);
 
   ngOnInit() {
+    // Show the prices the order will be charged: they may have changed since the items were added.
+    this.cartService.refreshPrices();
+
     this.route.queryParams.subscribe(params => {
       this.isWalletPaymentFlow.set(params['payment'] === 'wallet');
       if (params['provider']) {

@@ -120,6 +120,8 @@ export class CartPageComponent {
 
   constructor() {
     LucideAngularModule;
+    // Prices may have changed while the page was closed or the live connection was down.
+    this.cartService.refreshPrices();
   }
 
   updateQuantity(productId: string, size: string, quantity: number) {
