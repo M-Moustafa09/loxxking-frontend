@@ -8,6 +8,38 @@
   position: relative;
 }
 
+/* The gear sits inside .lk-settings-menu, so the shared sheets' «header-actions > button» chip
+   rule never reaches it — it rendered as a bare, faint 15px glyph hugging the edge. Styled here
+   as a proper chip, and inset so it mirrors the menu button on the other side. */
+.dashboard-home__header-actions {
+  left: 20px;
+}
+
+.dashboard-home__settings-button {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #ccecf6;
+  border-radius: 999px;
+  background: #eaf8fc;
+  color: #178caf;
+  cursor: pointer;
+}
+
+.dashboard-home__settings-button:hover,
+.dashboard-home__settings-button[aria-expanded='true'] {
+  border-color: #8ed7eb;
+  background: #def4fb;
+}
+
+.dashboard-home__settings-button:focus-visible {
+  outline: 2px solid #8ed7eb;
+  outline-offset: 2px;
+}
+
 .lk-settings-menu__backdrop {
   position: fixed;
   inset: 0;
