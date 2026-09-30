@@ -56,7 +56,8 @@ const BANK_TRANSFER_DETAILS = {
 };
 
 const BANK_RECEIPT_MAX_SIZE = 5 * 1024 * 1024;
-const BANK_RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+// Images only: the receipt is reviewed in the CRM, which shows it as an image (no PDF).
+const BANK_RECEIPT_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const WALLET_PAYMENT_SESSION_KEY = 'lk-wallet-payment-session';
 const ORDER_COUNTRY = 'SHARED.AUTO_STR_79';
 
@@ -287,7 +288,7 @@ export class CheckoutPageComponent implements OnInit {
       return;
     }
     if (!BANK_RECEIPT_TYPES.includes(file.type)) {
-      this.toastService.showToast('STOREFRONT.AUTO_STR_163', 'error');
+      this.toastService.showToast('CHECKOUT.RECEIPT_IMAGES_ONLY', 'error');
       return;
     }
     if (file.size > BANK_RECEIPT_MAX_SIZE) {

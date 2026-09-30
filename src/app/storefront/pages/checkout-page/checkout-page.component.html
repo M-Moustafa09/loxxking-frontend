@@ -289,7 +289,7 @@
                 <input
                   type="file"
                   required
-                  accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                   (change)="onBankReceiptChange($event)"
                 />
                 <span class="lk-bank-receipt-upload__icon" aria-hidden="true">
@@ -301,7 +301,7 @@
                   <small>
                     {{ bankReceipt() ? (bankReceipt()!.size / 1024 / 1024 | number:'1.2-2') + ' MB' : ('STOREFRONT.AUTO_STR_55' | translate) }}
                   </small>
-                  <em>{{ 'SHARED.AUTO_STR_6' | translate }} — JPG, PNG, PDF</em>
+                  <em>{{ 'SHARED.AUTO_STR_6' | translate }} — JPG, PNG, WEBP</em>
                 </span>
               </label>
             </div>
