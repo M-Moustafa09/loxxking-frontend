@@ -761,6 +761,7 @@
     "WAIST_DESC": "Slimmer waist\\nand attractive look"
   },
   "CHECKOUT": {
+    "RECEIPT_IMAGES_ONLY": "The transfer receipt must be an image (JPG, PNG or WEBP). If yours is a PDF, attach a screenshot of it.",
     "NOT_AVAILABLE_IN_COUNTRY": "Ordering is not available in your country yet. We deliver only to the countries where our prices show in their local currency. Contact us through the chat for help.",
     "ENTER_DETAILS": "Enter your details to complete the order",
     "CUSTOMER_DETAILS": "Customer Details",
